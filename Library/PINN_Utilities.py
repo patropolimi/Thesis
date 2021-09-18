@@ -3,15 +3,19 @@
 import jax
 import jax.numpy as jnp
 import numpy as np
+from functools import partial
 import smt.sampling_methods as sm
 
+
 Generator=np.random.default_rng(seed=time.time_ns())
+
 
 def Random_Seed():
 
 	""" Generating Random Seed """
 
 	return Generator.integers(0,1e10)
+
 
 def Glorot_Basic(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Layer):
 
@@ -24,6 +28,7 @@ def Glorot_Basic(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Laye
 		Weights.append(np.concatenate((np.random.randn(Layers[l+1],Layers[l])*np.sqrt(2/(Layers[l+1]+Layers[l])),np.zeros((Layers[l+1],1))),axis=1))
 	return Weights
 
+
 def Sample_Interior(Domain,N,Dist=1e-3):
 
 	""" Uniform Sampling (N Spots) Of Domain Interior """
@@ -32,6 +37,7 @@ def Sample_Interior(Domain,N,Dist=1e-3):
 	Internal[:,0]+=Dist/2
 	Internal[:,1]-=Dist/2
 	return sm.FullFactorial(xlimits=Internal)(N)
+
 
 def Sample_Boundary(Domain,N,Dist=1e-3):
 
@@ -57,6 +63,7 @@ def Sample_Boundary(Domain,N,Dist=1e-3):
 		Boundary_Points.append(np.concatenate((Samples_LB[:,:d],Domain[d,0]*np.ones((N[d][0],1)),Samples_LB[:,d+1:]),axis=1).T)
 		Boundary_Points.append(np.concatenate((Samples_UB[:,:d],Domain[d,1]*np.ones((N[d][1],1)),Samples_UB[:,d+1:]),axis=1).T)
 	return Boundary_Points
+
 
 def Set_Normals(Dim):
 

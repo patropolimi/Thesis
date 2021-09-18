@@ -2,27 +2,27 @@
 
 import PINN_Utilities as Uts
 
+
 class PINN_Basic:
 
 	""" Standard Physics-Informed Neural Network """
 
+
 	def __init__(self,ID,OD,HL,NPL,Sigma):
-		self.Input_Dimension=ID
-		self.Output_Dimension=OD
-		self.Hidden_Layers=HL
-		self.Neurons_Per_Layer=NPL
 		self.Weights=Uts.Glorot_Basic(ID,OD,HL,NPL)
 		self.Activation=Sigma
 
-	def Network(self,X):
+
+	@partial(jax.jit,static_argnums=(0))
+	def Network(self,X,W=self.Weights,Sigma=self.Activation):
 
 		""" Network Application """
 
 		Y=X
-		for l in range(Hidden_Layers):
-			Y=self.Activation(self.Weights[l][:,:-1]@Y+self.Weights[l][:,-1:])
-		return self.Weights[-1][:,:-1]@Y+self.Weights[-1][:,-1:]
-	Network=jax.jit(Network)
+		for l in range(len(W)-1):
+			Y=Sigma(W[l][:,:-1]@Y+W[l][:,-1:])
+		return W[-1][:,:-1]@Y+W[-1][:,-1:]
+
 
 class Geometry_Basic:
 
