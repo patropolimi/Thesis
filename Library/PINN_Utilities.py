@@ -1,10 +1,13 @@
 #! /usr/bin/python3
 
+import time
 import jax
 import jax.numpy as jnp
 import numpy as np
-from functools import partial
 import smt.sampling_methods as sm
+from functools import partial
+from type_templating import Template,TemplateParameter
+from scipy.optimize import fmin_l_bfgs_b as lbfgsb
 
 
 Generator=np.random.default_rng(seed=time.time_ns())
@@ -14,7 +17,7 @@ def Random_Seed():
 
 	""" Generating Random Seed """
 
-	return Generator.integers(0,1e10)
+	return Generator.integers(0,1e3)
 
 
 def Glorot_Basic(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Layer):
@@ -36,7 +39,7 @@ def Sample_Interior(Domain,N,Dist=1e-3):
 	Internal=Domain.copy()
 	Internal[:,0]+=Dist/2
 	Internal[:,1]-=Dist/2
-	return sm.FullFactorial(xlimits=Internal)(N)
+	return sm.FullFactorial(xlimits=Internal)(N).T
 
 
 def Sample_Boundary(Domain,N,Dist=1e-3):
@@ -52,16 +55,19 @@ def Sample_Boundary(Domain,N,Dist=1e-3):
 		- Boundary_Poinyts[2*d+1] -> Array Of Boundary Points (Columnwise) On Upper Bound Hyper-Face Of d-th Direction/Dimension """
 
 	Dim=len(N)
-	Boundary_Points=[]
-	Internal=Domain.copy()
-	Internal[:,0]+=Dist/2
-	Internal[:,1]-=Dist/2
-	for d in range(Dim):
-		Sampling=sm.FullFactorial(xlimits=np.concatenate((Internal[:d,:],Internal[d+1,:]),axis=0))
-		Samples_LB=Sampling(N[d][0])
-		Samples_UB=Sampling(N[d][1])
-		Boundary_Points.append(np.concatenate((Samples_LB[:,:d],Domain[d,0]*np.ones((N[d][0],1)),Samples_LB[:,d+1:]),axis=1).T)
-		Boundary_Points.append(np.concatenate((Samples_UB[:,:d],Domain[d,1]*np.ones((N[d][1],1)),Samples_UB[:,d+1:]),axis=1).T)
+	if (Dim==1):
+		Boundary_Points=[np.array([[Domain[0,0]]]),np.array([[Domain[0,1]]])]
+	else:
+		Boundary_Points=[]
+		Internal=Domain.copy()
+		Internal[:,0]+=Dist/2
+		Internal[:,1]-=Dist/2
+		for d in range(Dim):
+			Sampling=sm.FullFactorial(xlimits=np.concatenate((Internal[:d,:],Internal[d+1:,:]),axis=0))
+			Samples_LB=Sampling(N[d][0])
+			Samples_UB=Sampling(N[d][1])
+			Boundary_Points.append(np.concatenate((Samples_LB[:,:d],Domain[d,0]*np.ones((N[d][0],1)),Samples_LB[:,d+1:]),axis=1).T)
+			Boundary_Points.append(np.concatenate((Samples_UB[:,:d],Domain[d,1]*np.ones((N[d][1],1)),Samples_UB[:,d+1:]),axis=1).T)
 	return Boundary_Points
 
 
@@ -73,3 +79,29 @@ def Set_Normals(Dim):
 	Normals[:,:1:]=-np.eye(Dim)
 	Normals[:,1:1:]=np.eye(Dim)
 	return Normals
+
+
+def Flatten(ArrayList):
+
+	""" Flatten ArrayList """
+
+	L=len(ArrayList)
+	ArrayRows=np.zeros((L),dtype=int)
+	ArrayCum=np.zeros((L+1),dtype=int)
+	ArrayFlat=[]
+	for l in range(L):
+      s=np.shape(ArrayFlat[l])
+      ArrayRows[l]=s[0]
+      ArrayCum[l+1]=s[0]*s[1]+ArrayCum[l]
+	  ArrayFlat+=[np.ravel(ArrayList[l])]
+	return np.asarray(np.concatenate(ArrayFlat,axis=0)),ArrayRows,ArrayCum
+Flatten=jax.jit(Flatten)
+
+
+def ListMatrixize(FlatArray,Rows,Cum):
+
+	""" Matrixize FlatArray & Organize It Listwise """
+
+	L=len(Rows)
+return [np.asarray(np.reshape(np.take(FlatArray,np.arange(Cum[l],Cum[l+1])),(Rows[l],(Cum[l+1]-Cum[l])//Rows[l]))) for l in range(L)]
+Matrixize=jax.jit(Matrixize)
