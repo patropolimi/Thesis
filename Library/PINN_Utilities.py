@@ -56,7 +56,15 @@ def Sample_Boundary(Domain,N,Dist=1e-3):
 
 	Dim=len(N)
 	if (Dim==1):
-		Boundary_Points=[np.array([[Domain[0,0]]]),np.array([[Domain[0,1]]])]
+		Boundary_Points=[]
+		if (N[0][0]):
+			Boundary_Points+=[np.array([[Domain[0,0]]])]
+		else:
+			Boundary_Points+=[np.array([])]
+		if (N[0][1]):
+			Boundary_Points+=[np.array([[Domain[0,1]]])]
+		else:
+			Boundary_Points+=[np.array([])]
 	else:
 		Boundary_Points=[]
 		Internal=Domain.copy()
@@ -64,10 +72,16 @@ def Sample_Boundary(Domain,N,Dist=1e-3):
 		Internal[:,1]-=Dist/2
 		for d in range(Dim):
 			Sampling=sm.FullFactorial(xlimits=np.concatenate((Internal[:d,:],Internal[d+1:,:]),axis=0))
-			Samples_LB=Sampling(N[d][0])
-			Samples_UB=Sampling(N[d][1])
-			Boundary_Points.append(np.concatenate((Samples_LB[:,:d],Domain[d,0]*np.ones((N[d][0],1)),Samples_LB[:,d+1:]),axis=1).T)
-			Boundary_Points.append(np.concatenate((Samples_UB[:,:d],Domain[d,1]*np.ones((N[d][1],1)),Samples_UB[:,d+1:]),axis=1).T)
+			if (N[d][0]):
+				Samples_LB=Sampling(N[d][0])
+				Boundary_Points.append(np.concatenate((Samples_LB[:,:d],Domain[d,0]*np.ones((N[d][0],1)),Samples_LB[:,d+1:]),axis=1).T)
+			else:
+				Boundary_Points.append(np.array([]))
+			if (N[d][1]):
+				Samples_UB=Sampling(N[d][1])
+				Boundary_Points.append(np.concatenate((Samples_UB[:,:d],Domain[d,1]*np.ones((N[d][1],1)),Samples_UB[:,d+1:]),axis=1).T)
+			else:
+				Boundary_Points.append(np.array([]))
 	return Boundary_Points
 
 
@@ -90,18 +104,17 @@ def Flatten(ArrayList):
 	ArrayCum=np.zeros((L+1),dtype=int)
 	ArrayFlat=[]
 	for l in range(L):
-      s=np.shape(ArrayFlat[l])
-      ArrayRows[l]=s[0]
-      ArrayCum[l+1]=s[0]*s[1]+ArrayCum[l]
-	  ArrayFlat+=[np.ravel(ArrayList[l])]
+		s=np.shape(ArrayFlat[l])
+		ArrayRows[l]=s[0]
+		ArrayCum[l+1]=s[0]*s[1]+ArrayCum[l]
+		ArrayFlat+=[np.ravel(ArrayList[l])]
 	return np.asarray(np.concatenate(ArrayFlat,axis=0)),ArrayRows,ArrayCum
-Flatten=jax.jit(Flatten)
 
 
+@jax.jit
 def ListMatrixize(FlatArray,Rows,Cum):
 
 	""" Matrixize FlatArray & Organize It Listwise """
 
 	L=len(Rows)
-return [np.asarray(np.reshape(np.take(FlatArray,np.arange(Cum[l],Cum[l+1])),(Rows[l],(Cum[l+1]-Cum[l])//Rows[l]))) for l in range(L)]
-Matrixize=jax.jit(Matrixize)
+	return [jnp.asarray(jnp.reshape(jnp.take(FlatArray,jnp.arange(Cum[l],Cum[l+1])),(Rows[l],(Cum[l+1]-Cum[l])//Rows[l]))) for l in range(L)]

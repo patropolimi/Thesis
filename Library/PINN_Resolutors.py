@@ -46,22 +46,25 @@ class Resolutor_ADAM_LBFGSB(P,metaclass=Template[P]):
 
 		if W is None:
 			W=self.Weights
-			FinalCheck=True
 		if XR is None:
 			XR=self.Residual_Points
 		if XB is None:
 			XB=self.Boundary_Lists
 
 		W,W_Rows,W_Cum=Flatten(W)
-		W,ValueMin,Dictionary=lbfgsb(self.Cost,W,fprime=self.Gradient_Cost,args=(W_Rows,W_Cum),maxiter=MaxEpochs)
+		W,_,_=lbfgsb(self.Cost,W,fprime=self.Gradient_Cost,args=(W_Rows,W_Cum,XR,XB),maxiter=MaxEpochs)
 		W=ListMatrixize(W,W_Rows,W_Cum)
-		if (FinalCheck):
-			self.Weights=W
+		return W
 
 
 	def Learn(self,Iters_ADAM,Batch_ADAM,MaxIters_LBFGSB,W=None,XR=None,XB=None):
 
 		""" Learn Prompter """
 
+		FinalStep=(W==None)
+
 		ADAM(Iters_ADAM,Batch_ADAM,W,XR,XB)
-		LBFGSB(MaxIters_LBFGSB,W,XR,XB)
+		W,_,_=LBFGSB(MaxIters_LBFGSB,W,XR,XB)
+		if (FinalStep):
+			self.Weights=W
+		return W

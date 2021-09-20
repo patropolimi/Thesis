@@ -10,9 +10,9 @@ class Poisson_Basic(PINN_Basic,Geometry_Basic):
 
 	def __init__(self,ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,EX_Bou):
 		PINN_Basic.__init__(self,ID,1,HL,NPL,Sigma)
-		Geometry_Basic.__init(self,Domain,NResPts,NBouPts,BouLabs)
-		self.Source=jax.jit(SRC)
-		self.Exact_Boundary=jax.jit(EX_Bou)
+		Geometry_Basic.__init__(self,Domain,NResPts,NBouPts,BouLabs)
+		self.Source=jax.jit(SRC,static_argnums=(0))
+		self.Exact_Boundary=jax.jit(EX_Bou,static_argnums=(0))
 		self.Gradient_Network=jax.jit(jax.grad(self.Network))
 		self.Hessian_Network=jax.jit(jax.jacobian(self.Gradient_Network))
 		self.Gradient_Cost=jax.jit(jax.grad(self.Cost))
@@ -49,9 +49,9 @@ class Poisson_Basic(PINN_Basic,Geometry_Basic):
 			X=self.Boundary_Lists
 
 		Result=0.0
-		Dirichlet_Points=jnp.concatenate(X[self.BouLabs=='Dirichlet'],axis=1)
-		Neumann_Lists=[[X[i],i] for i,bc in enumerate(self.BouLabs) if (bc=='Neumann')]
-		Periodic_Lists=X[self.BouLabs=='Periodic']
+		Dirichlet_Points=jnp.concatenate([X[i] for i in range(len(X)) if (self.Boundary_Labels[i]=='Dirichlet')],axis=1)
+		Neumann_Lists=[[X[i],i] for i,bc in enumerate(self.Boundary_Labels) if (bc=='Neumann')]
+		Periodic_Lists=[X[i] for i in range(len(X)) if (self.Boundary_Labels[i]=='Periodic')]
 		Result+=jnp.sum((self.Exact_Boundary(Dirichlet_Points)-self.Network(Dirichlet_Points,W))**2)
 		for FacePoints,FaceIndex in Neumann_Lists:
 			Result+=jnp.sum((self.Exact_Boundary(FacePoints)-jax.vmap(jnp.inner,in_axes=(1,None),out_axes=1)(self.Gradient_Network(FacePoints,W),self.Boundary_Normals[:,FaceIndex]))**2)
@@ -65,6 +65,6 @@ class Poisson_Basic(PINN_Basic,Geometry_Basic):
 		""" Cost Function Computation """
 
 		if ((W is not None) and (not isinstance(W,list))):
-			W=Matrixize(W,W_Rows,W_Cum)
+			W=ListMatrixize(W,W_Rows,W_Cum)
 
 		return self.PDE(XR,W)+self.BC(XB,W)

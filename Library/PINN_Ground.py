@@ -42,6 +42,6 @@ class Geometry_Basic:
 		self.Residual_Points=Sample_Interior(Domain,NResPts)
 		self.Boundary_Lists=Sample_Boundary(Domain,NBouPts)
 		self.Number_Residuals=NResPts
-		self.Number_Boundary_Spots=sum([self.Boundary_Lists[i].shape[1] for i in range(len(Boundary_Lists))])
+		self.Number_Boundary_Spots=sum([self.Boundary_Lists[i].shape[1] for i in range(len(self.Boundary_Lists))])
 		self.Boundary_Normals=Set_Normals(Domain.shape[0])
 		self.Boundary_Labels=BouLabs
