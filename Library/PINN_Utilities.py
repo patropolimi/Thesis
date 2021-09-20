@@ -90,31 +90,55 @@ def Set_Normals(Dim):
 	""" Setting Normal Vectors For Dim-Dimensional Hyper-Rectangular Domain """
 
 	Normals=np.zeros((Dim,2*Dim))
-	Normals[:,:1:]=-np.eye(Dim)
-	Normals[:,1:1:]=np.eye(Dim)
+	Normals[:,::1]=-np.eye(Dim)
+	Normals[:,1::1]=np.eye(Dim)
 	return Normals
+
+
+def Set_Boundary_Points_And_Values(BouLists,BouLabs,Ex_Bou_D,Ex_Bou_N):
+
+	""" Setting Boundary Points & Values
+
+	 	Output:
+		- Dirichlet_Points -> Columnwise Array Of Dirichlet Points
+		- Dirichlet_Values -> Columnwise Array Of Dirichlet Values
+		- Neumann_Lists -> List[[Columnwise Array Of Neumann Points On i-th Face,i]]
+		- Neumann_Values -> List[Columnwise Array Of Neumann Values]
+		- Periodic_Lists -> List[Columnwise Array Of Periodic Points] """
+
+	NBL=len(BouLists)
+	Dirichlet_Points=np.concatenate([BouLists[i] for i in range(NBL) if (BouLabs[i]=='Dirichlet')],axis=1)
+	Neumann_Lists=[[BouLists[i],i] for i,bc in enumerate(BouLabs) if (bc=='Neumann')]
+	Periodic_Lists=[BouLists[i] for i in range(NBL) if (BouLabs[i]=='Periodic')]
+	Dirichlet_Values=Ex_Bou_D(Dirichlet_Points)
+	Neumann_Values=[Ex_Bou_N(FacePoints) for FacePoints,FaceIndex in Neumann_Lists]
+	return Dirichlet_Points,Dirichlet_Values,Neumann_Lists,Neumann_Values,Periodic_Lists
 
 
 def Flatten(ArrayList):
 
 	""" Flatten ArrayList """
 
+	global Rows,Cum
+
 	L=len(ArrayList)
-	ArrayRows=np.zeros((L),dtype=int)
-	ArrayCum=np.zeros((L+1),dtype=int)
+	Rows=np.zeros((L),dtype=int)
+	Cum=np.zeros((L+1),dtype=int)
 	ArrayFlat=[]
 	for l in range(L):
-		s=np.shape(ArrayFlat[l])
-		ArrayRows[l]=s[0]
-		ArrayCum[l+1]=s[0]*s[1]+ArrayCum[l]
+		s=np.shape(ArrayList[l])
+		Rows[l]=s[0]
+		Cum[l+1]=s[0]*s[1]+Cum[l]
 		ArrayFlat+=[np.ravel(ArrayList[l])]
-	return np.asarray(np.concatenate(ArrayFlat,axis=0)),ArrayRows,ArrayCum
+	return np.asarray(np.concatenate(ArrayFlat,axis=0)),Rows,Cum
 
 
 @jax.jit
-def ListMatrixize(FlatArray,Rows,Cum):
+def ListMatrixize(FlatArray):
 
 	""" Matrixize FlatArray & Organize It Listwise """
+
+	global Rows,Cum
 
 	L=len(Rows)
 	return [jnp.asarray(jnp.reshape(jnp.take(FlatArray,jnp.arange(Cum[l],Cum[l+1])),(Rows[l],(Cum[l+1]-Cum[l])//Rows[l]))) for l in range(L)]

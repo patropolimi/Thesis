@@ -14,9 +14,12 @@ class PINN_Basic:
 
 
 	@partial(jax.jit,static_argnums=(0))
-	def Network(self,X,W=None):
+	def Network_Multiple(self,X,W=None):
 
-		""" Network Application """
+		""" Network Application To Multiple Inputs X (Columnwise) -> Columnwise Output
+
+			Requirement:
+			- X: 2-Dimensional Array """
 
 		if W is None:
 			W=self.Weights
