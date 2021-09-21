@@ -15,7 +15,7 @@ class Problem_Scalar_Basic(PINN_Basic,Geometry_Basic):
 		self.Exact_Boundary_Dirichlet=jax.jit(Ex_Bou_D)
 		self.Exact_Boundary_Neumann=jax.jit(Ex_Bou_N)
 		self.Residual_Values=self.Source(self.Residual_Points)
-		self.Dirichlet_Points,self.Dirichlet_Values,self.Neumann_Lists,self.Neumann_Values,self.Periodic_Lists=Set_Boundary_Points_And_Values(self.Boundary_Lists,BouLabs,Ex_Bou_D,Ex_Bou_N)
+		self.Dirichlet_Points,self.Dirichlet_Values,self.Neumann_Lists,self.Neumann_Values,self.Periodic_Lists,self.Periodic_Lower_Points,self.Periodic_Upper_Points=Set_Boundary_Points_And_Values(self.Boundary_Lists,BouLabs,Ex_Bou_D,Ex_Bou_N)
 		self.Gradient_Network_Single=jax.jit(jax.grad(self.Network_Single))
 		self.Hessian_Network_Single=jax.jit(jax.jacobian(self.Gradient_Network_Single))
 		self.Gradient_Cost=jax.jit(jax.grad(self.Cost))
@@ -23,15 +23,12 @@ class Problem_Scalar_Basic(PINN_Basic,Geometry_Basic):
 
 
 	@partial(jax.jit,static_argnums=(0))
-	def Network_Single(self,X,W=None):
+	def Network_Single(self,X,W):
 
 		""" Network Application To Single Input X -> Scalar Output
 
 			Requirement:
 			- X: 1-Dimensional Array """
-
-		if W is None:
-			W=self.Weights
 
 		Y=X
 		for l in range(len(W)-1):
@@ -39,52 +36,47 @@ class Problem_Scalar_Basic(PINN_Basic,Geometry_Basic):
 		return jnp.sum(W[-1][:,:-1]@Y+W[-1][:,-1])
 
 
-	@partial(jax.jit,static_argnums=(0))
-	def PDE(self,X=None,W=None):
+	def PDE_Default_X(self):
 
-		""" PDE Loss Computation
+		""" Helper -> Provides PDE Default Argument X """
 
-			Legend:
-			- X[0] -> Residual_Points
-			- X[1] -> Number Of Residual Points """
-
-		if X is None:
-			X=[self.Residual_Points,self.Number_Residuals]
-
-		return jnp.sum((self.Source(X[0])-self.Equation(X[0],W))**2)/X[1]
+		return {'Residual_Points': self.Residual_Points, 'Number_Residuals': self.Number_Residuals}
 
 
 	@partial(jax.jit,static_argnums=(0))
-	def BC(self,X=None,W=None):
+	def PDE(self,X,W):
 
-		""" Boundary Conditions Loss Computation
+		""" PDE Loss Computation """
 
-			Legend:
-			- X[0] -> Dirichlet_Points
-			- X[1] -> Dirichlet_Values
-			- X[2] -> Neumann_Lists
-			- X[3] -> Neumann_Values
-			- X[4] -> Periodic_Lists
-			- X[5] -> Number Of Boundary Spots """
+		return jnp.sum((self.Source(X['Residual_Points'])-self.Equation(X['Residual_Points'],W))**2)/X['Number_Residuals']
 
-		if X is None:
-			X=[self.Dirichlet_Points,self.Dirichlet_Values,self.Neumann_Lists,self.Neumann_Values,self.Periodic_Lists,self.Number_Boundary_Spots]
 
-		Result=jnp.sum((X[1]-self.Network_Multiple(X[0],W))**2)
-		for i,[FacePoints,FaceIndex] in enumerate(X[2]):
+	def BC_Default_X(self):
+
+		""" Helper -> Provides PDE Default Argument X """
+
+		return {'Dirichlet_Points': self.Dirichlet_Points,'Dirichlet_Values': self.Dirichlet_Values,'Neumann_Lists': self.Neumann_Lists,'Neumann_Values': self.Neumann_Values,'Periodic_Lower_Points': self.Periodic_Lower_Points,'Periodic_Upper_Points': self.Periodic_Upper_Points,'Number_Boundary_Spots': self.Number_Boundary_Spots}
+
+
+	@partial(jax.jit,static_argnums=(0))
+	def BC(self,X,W):
+
+		""" Boundary Conditions Loss Computation """
+
+		Result=jnp.sum((X['Dirichlet_Values']-self.Network_Multiple(X['Dirichlet_Points'],W))**2)
+		Neumann_Network_Values=[]
+		for FacePoints,FaceIndex in X['Neumann_Lists']:
 			FaceGradients=jax.vmap(self.Gradient_Network_Single,in_axes=(1,None),out_axes=1)(FacePoints,W)
-			Result+=jnp.sum((X[3][i]-(jax.vmap(jnp.inner,in_axes=(1,None))(FaceGradients,self.Boundary_Normals[:,FaceIndex]))[None,:])**2)
-		for l in range(len(X[4])//2):
-			Result+=jnp.sum((self.Network_Multiple(X[4][2*l],W)-self.Network_Multiple(X[4][2*l+1],W))**2)
-		return Result/X[5]
+			Neumann_Network_Values+=[(jax.vmap(jnp.inner,in_axes=(1,None))(FaceGradients,jnp.take(self.Boundary_Normals,FaceIndex,axis=1)))[None,:]]
+		Neumann_Network_Values=jnp.concatenate(Neumann_Network_Values,axis=1)
+		Result+=jnp.sum((X['Neumann_Values']-Neumann_Network_Values)**2)
+		Result+=jnp.sum((self.Network_Multiple(X['Periodic_Lower_Points'],W)-self.Network_Multiple(X['Periodic_Upper_Points'],W))**2)
+		return Result/X['Number_Boundary_Spots']
 
 
 	@partial(jax.jit,static_argnums=(0))
-	def Cost(self,W=None,XR=None,XB=None):
+	def Cost(self,W,XR,XB):
 
-		""" Cost Function Computation
-
-			Derivative Requirement:
-			- Gradient_Cost Needs W To Be Explicitely Passed """
+		""" Cost Function Computation """
 
 		return self.PDE(XR,W)+self.BC(XB,W)

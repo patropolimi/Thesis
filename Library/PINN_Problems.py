@@ -14,7 +14,7 @@ class Poisson_Basic(Problem_Scalar_Basic):
 
 
 	@partial(jax.jit,static_argnums=(0))
-	def SingleLaplacian(self,X,W=None):
+	def SingleLaplacian(self,X,W):
 
 		""" Single Input Contribution/Component Network Laplacian """
 
@@ -22,11 +22,8 @@ class Poisson_Basic(Problem_Scalar_Basic):
 
 
 	@partial(jax.jit,static_argnums=(0))
-	def Laplacian(self,X=None,W=None):
+	def Laplacian(self,X,W):
 
 		""" Overall Network Laplacian Computation """
-
-		if X is None:
-			X=self.Residual_Points
 
 		return (jax.vmap(self.SingleLaplacian,in_axes=(1,None))(X,W))[None,:]

@@ -25,7 +25,8 @@ class Resolutor_ADAM_LBFGSB(P,metaclass=Template[P]):
 		v=[np.zeros_like(w) for w in self.Weights]
 		for i in range(Epochs):
 			IdxsR=np.random.choice(self.Number_Residuals,Batch)
-			g=self.Gradient_Cost(self.Weights,[self.Residual_Points[:,IdxsR],Batch])
+			XR={'Residual_Points': self.Residual_Points[:,IdxsR],'Number_Residuals': Batch}
+			g=self.Gradient_Cost(self.Weights,XR,self.BC_Default_X())
 			for l in range(L):
 				m[l]=(b1*m[l]+(1-b1)*g[l])/(1-b1**(i+1))
 				v[l]=(b2*v[l]+(1-b2)*g[l]*g[l])/(1-b2**(i+1))
