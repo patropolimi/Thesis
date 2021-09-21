@@ -59,11 +59,11 @@ def Sample_Boundary(Domain,N,Dist=1e-3):
 		if (N[0][0]):
 			Boundary_Points+=[np.array([[Domain[0,0]]])]
 		else:
-			Boundary_Points+=[np.array([])]
+			Boundary_Points+=[np.array([[]])]
 		if (N[0][1]):
 			Boundary_Points+=[np.array([[Domain[0,1]]])]
 		else:
-			Boundary_Points+=[np.array([])]
+			Boundary_Points+=[np.array([[]])]
 	else:
 		Internal=Domain.copy()
 		Internal[:,0]+=Dist/2
@@ -74,12 +74,12 @@ def Sample_Boundary(Domain,N,Dist=1e-3):
 				Samples_LB=Sampling(N[d][0])
 				Boundary_Points.append(np.concatenate((Samples_LB[:,:d],Domain[d,0]*np.ones((N[d][0],1)),Samples_LB[:,d:]),axis=1).T)
 			else:
-				Boundary_Points.append(np.array([]))
+				Boundary_Points.append(np.array([[]]))
 			if (N[d][1]):
 				Samples_UB=Sampling(N[d][1])
 				Boundary_Points.append(np.concatenate((Samples_UB[:,:d],Domain[d,1]*np.ones((N[d][1],1)),Samples_UB[:,d:]),axis=1).T)
 			else:
-				Boundary_Points.append(np.array([]))
+				Boundary_Points.append(np.array([[]]))
 	return Boundary_Points
 
 
@@ -107,14 +107,24 @@ def Set_Boundary_Points_And_Values(BouLists,BouLabs,Ex_Bou_D,Ex_Bou_N):
 		- Periodic_Upper_Points -> Array Of Upper Periodic Points Columnwise """
 
 	NBL=len(BouLists)
-	Dirichlet_Points=jnp.concatenate([BouLists[i] for i in range(NBL) if (BouLabs[i]=='Dirichlet')],axis=1)
-	Dirichlet_Values=Ex_Bou_D(Dirichlet_Points)
+	Dirichlet_Lists=[BouLists[i] for i in range(NBL) if (BouLabs[i]=='Dirichlet')]
+	if Dirichlet_Lists:
+		Dirichlet_Values=[Ex_Bou_D(FacePoints) for FacePoints,_ in Dirichlet_Lists]
+	else:
+		Dirichlet_Values=[]
 	Neumann_Lists=[[BouLists[i],i] for i,bc in enumerate(BouLabs) if (bc=='Neumann')]
-	Neumann_Values=jnp.concatenate([Ex_Bou_N(FacePoints) for FacePoints,_ in Neumann_Lists],axis=1)
+	if Neumann_Lists:
+		Neumann_Values=[Ex_Bou_N(FacePoints) for FacePoints,_ in Neumann_Lists]
+	else:
+		Neumann_Values=[]
 	Periodic_Lists=[BouLists[i] for i in range(NBL) if (BouLabs[i]=='Periodic')]
-	Periodic_Lower_Points=jnp.concatenate(Periodic_Lists[::2],axis=1)
-	Periodic_Upper_Points=jnp.concatenate(Periodic_Lists[1::2],axis=1)
-	return Dirichlet_Points,Dirichlet_Values,Neumann_Lists,Neumann_Values,Periodic_Lists,Periodic_Lower_Points,Periodic_Upper_Points
+	if Periodic_Lists:
+		Periodic_Lower_Points=Periodic_Lists[::2]
+		Periodic_Upper_Points=Periodic_Lists[1::2]
+	else:
+		Periodic_Lower_Points=[]
+		Periodic_Upper_Points=[]
+	return Dirichlet_Lists,Dirichlet_Values,Neumann_Lists,Neumann_Values,Periodic_Lists,Periodic_Lower_Points,Periodic_Upper_Points
 
 
 def Flatten(ArrayList):
