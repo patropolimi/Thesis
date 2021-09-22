@@ -4,7 +4,9 @@ import time
 import jax
 import jax.numpy as jnp
 import numpy as np
+import dill
 import smt.sampling_methods as sm
+import matplotlib.pyplot as plt
 from functools import partial
 from type_templating import Template,TemplateParameter
 
@@ -16,7 +18,7 @@ def Random_Seed():
 
 	""" Generating Random Seed """
 
-	return Generator.integers(0,1e3)
+	return Generator.integers(0,1e5)
 
 
 def Glorot_Basic(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Layer):
@@ -109,7 +111,7 @@ def Set_Boundary_Points_And_Values(BouLists,BouLabs,Ex_Bou_D,Ex_Bou_N):
 	NBL=len(BouLists)
 	Dirichlet_Lists=[BouLists[i] for i in range(NBL) if (BouLabs[i]=='Dirichlet')]
 	if Dirichlet_Lists:
-		Dirichlet_Values=[Ex_Bou_D(FacePoints) for FacePoints,_ in Dirichlet_Lists]
+		Dirichlet_Values=[Ex_Bou_D(FacePoints) for FacePoints in Dirichlet_Lists]
 	else:
 		Dirichlet_Values=[]
 	Neumann_Lists=[[BouLists[i],i] for i,bc in enumerate(BouLabs) if (bc=='Neumann')]

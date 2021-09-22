@@ -41,7 +41,6 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 				m[l]=(b*m[l]+(1-b)*g[l])/(1-b**(i+1))
 				v[l]=(c*v[l]+(1-c)*g[l]*g[l])/(1-c**(i+1))
 				self.Weights[l]-=(a*m[l]/(np.sqrt(v[l])+d))
-		print("Current Cost: %.3e " %(self.Cost(self.Weights,self.PDE_Default_X(),self.BC_Default_X())))
 
 
 	def BFGS(self,MaxEpochs,Parameters=None):
@@ -99,15 +98,23 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 			Grad_Pre=np.copy(Grad_Post)
 			Iters+=1
 		self.Weights=ListMatrixize(W)
-		print("Current Cost: %.3e " %(self.Cost(self.Weights,self.PDE_Default_X(),self.BC_Default_X())))
 
 
-	def Learn(self,ADAM_Calls,ADAM_Steps,ADAM_Batch,BFGS_MaxSteps,ADAM_Params=None,BFGS_Params=None):
+	def Learn(self,ADAM_Steps,ADAM_Batch,BFGS_MaxSteps,ADAM_Params=None,BFGS_Params=None):
 
 		""" Learning Prompter """
 
-		for i in range(ADAM_Calls):
-			print("ADAM Progressing ... ")
-			self.ADAM(ADAM_Steps[i],ADAM_Batch,ADAM_Params)
+		self.Print_Cost()
+		print("ADAM Progressing ... ")
+		self.ADAM(Iters,ADAM_Batch,ADAM_Params)
+		self.Print_Cost()
 		print("BFGS Progressing ... ")
 		self.BFGS(BFGS_MaxSteps,BFGS_Params)
+		self.Print_Cost()
+
+
+	def Print_Cost(self):
+
+		""" Prints Current Cost Function Value """
+
+		print("Current Cost: %.3e " %(self.Cost(self.Weights,self.PDE_Default_X(),self.BC_Default_X())))
