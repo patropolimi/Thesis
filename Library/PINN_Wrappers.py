@@ -80,3 +80,45 @@ class Problem_Scalar_Basic(PINN_Basic,Geometry_Basic):
 		""" Cost Function Computation """
 
 		return self.PDE(XR,W)+self.BC(XB,W)
+
+
+	def Plot_1D(self,X):
+
+		""" Plot Network On X
+
+			Requirements:
+			- 1D-Input Network
+			- X -> 1D Array """
+
+		plt.plot(X,self.Network_Multiple(X[None,:],self.Weights)[0,:])
+		plt.show()
+
+
+	def Plot_2D(self,X,Y):
+
+		""" Plot Network On Meshgrid X x Y
+
+			Requirements:
+			- 2D-Input Network
+			- X,Y -> 1D Arrays """
+
+		XG,YG=np.meshgrid(X,Y)
+		X_Vals=X[None,:]
+		NX=X_Vals.shape[1]
+		Pts=[]
+		for i in range(YG.shape[0]):
+			Y_Vals=np.array(NX*[YG[i,0]])[None,:]
+			Pts+=[np.concatenate((X_Vals,Y_Vals),axis=0)]
+		Pts=np.concatenate(Pts,axis=1)
+		Net_Values=self.Network_Multiple(Pts,self.Weights).reshape(XG.shape)
+		Figure=plt.figure()
+		Ax=plt.axes(projection='3d')
+		Ax.plot_surface(XG,YG,Net_Values)
+		plt.show()
+
+
+	def Print_Cost(self):
+
+		""" Prints Current Cost Function Value """
+
+		print("Current Cost: %.3e " %(self.Cost(self.Weights,self.PDE_Default_X(),self.BC_Default_X())))

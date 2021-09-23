@@ -1,10 +1,10 @@
 #! /usr/bin/python3
 
+import dill
 import time
 import jax
 import jax.numpy as jnp
 import numpy as np
-import dill
 import smt.sampling_methods as sm
 import matplotlib.pyplot as plt
 from functools import partial
@@ -101,13 +101,13 @@ def Set_Boundary_Points_And_Values(BouLists,BouLabs,Ex_Bou_D,Ex_Bou_N):
 	""" Setting Boundary Points & Values
 
 	 	Output:
-		- Dirichlet_Points -> Columnwise Array Of Dirichlet Points
-		- Dirichlet_Values -> Columnwise Array Of Dirichlet Values
+		- Dirichlet_Lists -> List[Columnwise Array Of Dirichlet Points]
+		- Dirichlet_Values -> List[Columnwise Array Of Dirichlet Values]
 		- Neumann_Lists -> List[[Columnwise Array Of Neumann Points On i-th Face,i]]
-		- Neumann_Values -> Columnwise Array Of Neumann Values
+		- Neumann_Values -> List[Columnwise Array Of Neumann Values]
 		- Periodic_Lists -> List[Columnwise Array Of Periodic Points]
-		- Periodic_Lower_Points -> Array Of Lower Periodic Points Columnwise
-		- Periodic_Upper_Points -> Array Of Upper Periodic Points Columnwise """
+		- Periodic_Lower_Points -> List[Columnwise Array Of Lower Periodic Points]
+		- Periodic_Upper_Points -> List[Columnwise Array Of Upper Periodic Points] """
 
 	NBL=len(BouLists)
 	Dirichlet_Lists=[BouLists[i] for i in range(NBL) if (BouLabs[i]=='Dirichlet')]
