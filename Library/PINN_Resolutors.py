@@ -16,7 +16,7 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 
 
 	ADAM_Default={'Alpha': 1e-3,'Beta': 0.9,'Gamma': 0.999,'Delta': 1e-7}
-	BFGS_Default={'GradTol': 1e-5,'AlphaZero': 10.0,'C': 0.5,'Tau': 0.5}
+	BFGS_Default={'GradTol': 1e-5,'AlphaZero': 10.0,'C': 0.5,'Tau': 0.5,'StillTol': 10,'AlphaTol': 1e-10,'Eps': 1e-12}
 
 
 	def ADAM(self,Epochs,Batch,Parameters=None):
@@ -52,9 +52,9 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 		""" BFGS Optimization Method """
 
 		if Parameters is None:
-			[GradTol,AlphaZero,C,Tau]=[self.BFGS_Default['GradTol'],self.BFGS_Default['AlphaZero'],self.BFGS_Default['C'],self.BFGS_Default['Tau']]
+			[GradTol,AlphaZero,C,Tau,StillTol,AlphaTol,Eps]=[self.BFGS_Default['GradTol'],self.BFGS_Default['AlphaZero'],self.BFGS_Default['C'],self.BFGS_Default['Tau'],self.BFGS_Default['StillTol'],self.BFGS_Default['AlphaTol'],self.BFGS_Default['Eps']]
 		else:
-			[GradTol,AlphaZero,C,Tau]=[Parameters['GradTol'],Parameters['AlphaZero'],Parameters['C'],Parameters['Tau']]
+			[GradTol,AlphaZero,C,Tau,StillTol,AlphaTol,Eps]=[Parameters['GradTol'],Parameters['AlphaZero'],Parameters['C'],Parameters['Tau'],Parameters['StillTol'],Parameters['AlphaTol'],Parameters['Eps']]
 
 		@jax.jit
 		def Cost_BFGS(W,Alpha,D):
@@ -73,12 +73,13 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 			A=Alpha_Pre
 			T=-C*M
 			Cost_Post=Cost_BFGS(W,A,D)
-			if ((Cost_Pre-Cost_Post)>=(A*T)):
-				while ((Cost_Pre-Cost_Post)>=(A*T) and (A<=AlphaZero)):
+			if ((Cost_Pre-Cost_Post)>=np.abs(A*T)):
+				while ((Cost_Pre-Cost_Post)>=np.abs(A*T) and (A<=AlphaZero)):
 					A/=Tau
 					Cost_Post=Cost_BFGS(W,A,D)
+				A*=Tau
 			else:
-				while ((Cost_Pre-Cost_Post)<(A*T)):
+				while ((Cost_Pre-Cost_Post)<(np.abs(A*T)-Eps)):
 					A*=Tau
 					Cost_Post=Cost_BFGS(W,A,D)
 			return A
@@ -92,10 +93,9 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 		Iters=0
 		Grad_Pre=Grad_Cost_BFGS(W,0.0,Z)
 		Alpha=AlphaZero
-		while (not(np.linalg.norm(Grad_Pre)<GradTol) and (Iters<MaxEpochs)):
+		Consecutive_Still=0
+		while (not(np.linalg.norm(Grad_Pre)<GradTol) and (Iters<MaxEpochs) and (Consecutive_Still<StillTol)):
 			Cost=Cost_BFGS(W,0.0,Z)
-			if (Iters%10==0):
-				Hist+=[Cost]
 			Direction=-(B)@(Grad_Pre)
 			Alpha=Line_Search(W,Alpha,Direction,np.inner(Grad_Pre,Direction),Cost)
 			S=Alpha*Direction
@@ -104,6 +104,14 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 			Y=Grad_Post-Grad_Pre
 			Denominator=np.inner(S,Y)
 			B=(I-(S[:,None])@(Y[None,:])/Denominator)@(B)@(I-(Y[:,None])@(S[None,:])/Denominator)+((S[:,None])@(S[None,:])/Denominator)
+			if (Iters%10==0):
+				Hist+=[Cost]
+			if (not(jnp.all(jnp.isfinite(B)))):
+				break
+			if (Alpha<AlphaTol):
+				Consecutive_Still+=1
+			else:
+				Consecutive_Still=0
 			Grad_Pre=np.copy(Grad_Post)
 			Iters+=1
 		self.Weights=ListMatrixize(W)
