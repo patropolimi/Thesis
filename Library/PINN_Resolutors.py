@@ -106,7 +106,7 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 
 		self.Print_Cost()
 		print("ADAM Progressing ... ")
-		self.ADAM(Iters,ADAM_Batch,ADAM_Params)
+		self.ADAM(ADAM_Steps,ADAM_Batch,ADAM_Params)
 		self.Print_Cost()
 		print("BFGS Progressing ... ")
 		self.BFGS(BFGS_MaxSteps,BFGS_Params)
