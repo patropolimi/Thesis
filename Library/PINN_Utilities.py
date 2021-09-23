@@ -21,15 +21,16 @@ def Random_Seed():
 	return Generator.integers(0,1e5)
 
 
-def Glorot_Basic(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Layer):
+def Glorot_Uniform_Basic(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Layer):
 
-	""" Standard Glorot Initialization """
+	""" Standard Glorot Uniform Initialization """
 
 	np.random.seed(Random_Seed())
 	Layers=[Input_Dimension]+[Neurons_Per_Layer]*Hidden_Layers+[Output_Dimension]
 	Weights=[]
 	for l in range(Hidden_Layers+1):
-		Weights.append(np.concatenate((np.random.randn(Layers[l+1],Layers[l])*np.sqrt(2/(Layers[l+1]+Layers[l])),np.zeros((Layers[l+1],1))),axis=1))
+		Limit=np.sqrt(6/(Layers[l+1]+Layers[l]))
+		Weights.append(np.concatenate((np.random.uniform(-Limit,Limit,(Layers[l+1],Layers[l])),np.zeros((Layers[l+1],1))),axis=1))
 	return Weights
 
 

@@ -15,7 +15,7 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 		- BFGS -> Super-Linear Order """
 
 
-	ADAM_Default={'Alpha': 1e-3,'Beta': 0.9,'Gamma': 0.999,'Delta': 1e-8}
+	ADAM_Default={'Alpha': 1e-3,'Beta': 0.9,'Gamma': 0.999,'Delta': 1e-7}
 	BFGS_Default={'GradTol': 1e-5,'LSNu': 1e-3,'LSMax': 50,'LSTol': 1e-5}
 
 
@@ -38,9 +38,9 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 			XR['Residual_Points']=self.Residual_Points[:,IdxsR]
 			g=self.Gradient_Cost(self.Weights,XR,self.BC_Default_X())
 			for l in range(L):
-				m[l]=(b*m[l]+(1-b)*g[l])/(1-b**(i+1))
-				v[l]=(c*v[l]+(1-c)*g[l]*g[l])/(1-c**(i+1))
-				self.Weights[l]-=(a*m[l]/(np.sqrt(v[l])+d))
+				m[l]=(b*m[l]+(1-b)*g[l])
+				v[l]=(c*v[l]+(1-c)*g[l]*g[l])
+				self.Weights[l]-=(a*(m[l]/(1-b**(i+1))))/(np.sqrt(v[l]/(1-c**(i+1)))+d)
 
 
 	def BFGS(self,MaxEpochs,Parameters=None):
@@ -53,7 +53,7 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 			[GradTol,LSNu,LSMax,LSTol]=[Parameters['GradTol'],Parameters['LSNu'],Parameters['LSMax'],Parameters['LSTol']]
 
 		@jax.jit
-		def Cost_BFGS(W,Alpha=0,D=0):
+		def Cost_BFGS(W,Alpha,D):
 
 			""" Helper Cost For BFGS """
 
@@ -85,13 +85,13 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 		I=np.eye(N)
 		B=np.copy(I)
 		Iters=0
-		Grad_Pre=Grad_Cost_BFGS_W(W)
+		Grad_Pre=Grad_Cost_BFGS_W(W,0,np.zeros_like(W))
 		while (not(np.linalg.norm(Grad_Pre)<GradTol) and (Iters<MaxEpochs)):
 			Direction=-(B)@(Grad_Pre)
 			Alpha=Line_Search(W,LSNu,Direction)
 			S=Alpha*Direction
 			W+=S
-			Grad_Post=Grad_Cost_BFGS_W(W)
+			Grad_Post=Grad_Cost_BFGS_W(W,0,np.zeros_like(W))
 			Y=Grad_Post-Grad_Pre
 			Denominator=np.inner(S,Y)
 			B=(I-(S[:,None])@(Y[None,:])/Denominator)@(B)@(I-(Y[:,None])@(S[None,:])/Denominator)+((S[:,None])@(S[None,:])/Denominator)
@@ -105,12 +105,14 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 		""" Learning Prompter """
 
 		self.Print_Cost()
-		print("ADAM Progressing ... ")
-		self.ADAM(ADAM_Steps,ADAM_Batch,ADAM_Params)
-		self.Print_Cost()
-		print("BFGS Progressing ... ")
-		self.BFGS(BFGS_MaxSteps,BFGS_Params)
-		self.Print_Cost()
+		if (ADAM_Steps):
+			print("ADAM Progressing ... ")
+			self.ADAM(ADAM_Steps,ADAM_Batch,ADAM_Params)
+			self.Print_Cost()
+		if (BFGS_MaxSteps):
+			print("BFGS Progressing ... ")
+			self.BFGS(BFGS_MaxSteps,BFGS_Params)
+			self.Print_Cost()
 
 
 	def Print_Cost(self):

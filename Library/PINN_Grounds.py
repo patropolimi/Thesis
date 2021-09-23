@@ -9,7 +9,7 @@ class PINN_Basic:
 
 
 	def __init__(self,ID,OD,HL,NPL,Sigma):
-		self.Weights=Glorot_Basic(ID,OD,HL,NPL)
+		self.Weights=Glorot_Uniform_Basic(ID,OD,HL,NPL)
 		self.Activation=Sigma
 
 
