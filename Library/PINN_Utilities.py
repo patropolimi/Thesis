@@ -11,6 +11,9 @@ from functools import partial
 from type_templating import Template,TemplateParameter
 
 
+jax.config.update("jax_enable_x64",True)
+
+
 Generator=np.random.default_rng(seed=time.time_ns())
 
 

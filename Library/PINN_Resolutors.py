@@ -16,7 +16,7 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 
 
 	ADAM_Default={'Alpha': 1e-3,'Beta': 0.9,'Gamma': 0.999,'Delta': 1e-7}
-	BFGS_Default={'GradTol': 1e-5,'AlphaZero': 10.0,'C': 0.5,'Tau': 0.5,'StillTol': 10,'AlphaTol': 1e-10,'Eps': 1e-12}
+	BFGS_Default={'GradTol': 1e-6,'AlphaZero': 10.0,'C': 0.5,'Tau': 0.5,'StillTol': 10,'AlphaTol': 1e-10,'Eps': 1e-12}
 
 
 	def ADAM(self,Epochs,Batch,Parameters=None):
@@ -28,15 +28,13 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 		else:
 			[a,b,c,d]=[Parameters['Alpha'],Parameters['Beta'],Parameters['Gamma'],Parameters['Delta']]
 
-		Hist=[]
 		np.random.seed(Random_Seed())
+		Hist=[self.Cost(self.Weights,self.PDE_Default_X(),self.BC_Default_X())]
 		L=len(self.Weights)
 		m=[np.zeros_like(w) for w in self.Weights]
 		v=[np.zeros_like(w) for w in self.Weights]
 		XR={'Residual_Points': self.Residual_Points,'Number_Residuals': Batch}
 		for i in range(Epochs):
-			if (i%10==0):
-				Hist+=[self.Cost(self.Weights,self.PDE_Default_X(),self.BC_Default_X())]
 			IdxsR=np.random.choice(self.Number_Residuals,Batch)
 			XR['Residual_Points']=self.Residual_Points[:,IdxsR]
 			g=self.Gradient_Cost(self.Weights,XR,self.BC_Default_X())
@@ -44,6 +42,7 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 				m[l]=(b*m[l]+(1-b)*g[l])
 				v[l]=(c*v[l]+(1-c)*g[l]*g[l])
 				self.Weights[l]-=(a*(m[l]/(1-b**(i+1))))/(np.sqrt(v[l]/(1-c**(i+1)))+d)
+			Hist+=[self.Cost(self.Weights,self.PDE_Default_X(),self.BC_Default_X())]
 		return Hist
 
 
@@ -84,34 +83,48 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 					Cost_Post=Cost_BFGS(W,A,D)
 			return A
 
+		@jax.jit
+		def Update_B(B,S,Y,I,Denominator):
+
+			""" Helper To Update B (Inverse Hessian Approximation) """
+
+			M1=-(S[:,None])@(Y[None,:])/Denominator
+			M2=(S[:,None])@(S[None,:])/Denominator
+			New_B=I+M1
+			New_B=(New_B)@(B)
+			New_B=(New_B)@(I+M1.T)
+			New_B+=M2
+			return New_B
+
 		Hist=[]
 		W=np.asarray(Flatten(self.Weights))
-		Z=np.zeros_like(W)
 		N=W.shape[0]
+		Z=np.zeros_like(W)
 		I=np.eye(N)
 		B=np.copy(I)
-		Iters=0
+		Cost_Pre=Cost_BFGS(W,0.0,Z)
 		Grad_Pre=Grad_Cost_BFGS(W,0.0,Z)
 		Alpha=AlphaZero
 		Consecutive_Still=0
-		while (not(np.linalg.norm(Grad_Pre)<GradTol) and (Iters<MaxEpochs) and (Consecutive_Still<StillTol)):
-			Cost=Cost_BFGS(W,0.0,Z)
+		Iters=0
+		while (not(jnp.linalg.norm(Grad_Pre)<GradTol) and (Iters<MaxEpochs) and (Consecutive_Still<StillTol)):
 			Direction=-(B)@(Grad_Pre)
-			Alpha=Line_Search(W,Alpha,Direction,np.inner(Grad_Pre,Direction),Cost)
+			Alpha=Line_Search(W,Alpha,Direction,jnp.inner(Grad_Pre,Direction),Cost_Pre)
 			S=Alpha*Direction
 			W+=S
+			Cost_Post=Cost_BFGS(W,0.0,Z)
 			Grad_Post=Grad_Cost_BFGS(W,0.0,Z)
 			Y=Grad_Post-Grad_Pre
-			Denominator=np.inner(S,Y)
-			B=(I-(S[:,None])@(Y[None,:])/Denominator)@(B)@(I-(Y[:,None])@(S[None,:])/Denominator)+((S[:,None])@(S[None,:])/Denominator)
-			if (Iters%10==0):
-				Hist+=[Cost]
+			Denominator=jnp.inner(S,Y)
+			B=Update_B(B,S,Y,I,Denominator)
 			if (not(jnp.all(jnp.isfinite(B)))):
 				break
 			if (Alpha<AlphaTol):
 				Consecutive_Still+=1
 			else:
 				Consecutive_Still=0
+			Hist+=[Cost_Pre]
+			Cost_Pre=Cost_Post
 			Grad_Pre=np.copy(Grad_Post)
 			Iters+=1
 		self.Weights=ListMatrixize(W)

@@ -3,13 +3,13 @@
 from PINN_Resolutors import *
 
 
-""" Main Script [To Be Launched Once For Each Test] -> PINN Sensitivity Analysis
+""" Main Script [To Be Launched Once For Each Test] [To Be Tuned By Hand For Every Launch] -> PINN Sensitivity Analysis
 
-	{In Each Test -> Change Only F_Low, F_Medium, F_High}
+	{In Each Test -> Change Only F_Low, F_Medium, F_High & Relative Solution Strings}
 
-	Problem: Scalar 1D Poisson With Homogeneous Dirichlet Conditions [20 Residual Points]
+	Problem: Scalar 1D Poisson With Homogeneous Dirichlet Conditions In Domain [-1,1] [20 Residual Points]
 
-	Launch To Create PINNs To Approximate (In Domain [-1,1]):
+	Launch To Create PINNs To Approximate:
 	- Low Frequency Solution (F_Low: Corresponding Source Term)
 	- Medium Frequency Solution (F_Medium: Corresponding Source Term)
 	- High Frequency Solution (F_High: Corresponding Source Term)
@@ -20,7 +20,7 @@ from PINN_Resolutors import *
 	- Sigmoid (Classic Sigmoid)
 
 	Trial Architectures Parameters:
-	- Hidden_Layers -> [1,2,3,]
+	- Hidden_Layers -> [1,2,3]
 	- Neurons_Per_Layer -> [15,30,50]
 
 	Three Models Trained With ADAM-BFGS (10000 ADAM Steps, 1000 Maximum BFGS Steps [Both Full-Batched & Default Settings]) For Each (Frequency-Architecture-Activation) Combination
@@ -55,8 +55,8 @@ def Sol_High(X):
 	return (jnp.sin(5*jnp.pi*X))
 String_High='sin(5*pi*x)'
 
-def G(x):
-	return jnp.zeros_like(x)
+def G(X):
+	return jnp.zeros_like(X)
 
 Domain=np.array([[-1.0,1.0]])
 Points=np.linspace(-1.0,1.0,2001)
