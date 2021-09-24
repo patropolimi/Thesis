@@ -119,7 +119,7 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 			B=Update_B(B,S,Y,I,Denominator)
 			if (not(jnp.all(jnp.isfinite(B)))):
 				break
-			if (Alpha<AlphaTol):
+			if (np.abs(Alpha)<AlphaTol):
 				Consecutive_Still+=1
 			else:
 				Consecutive_Still=0
