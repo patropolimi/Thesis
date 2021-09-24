@@ -82,7 +82,7 @@ class Problem_Scalar_Basic(PINN_Basic,Geometry_Basic):
 		return self.PDE(XR,W)+self.BC(XB,W)
 
 
-	def Plot_1D(self,X):
+	def Plot_1D(self,X,W=None):
 
 		""" Plot Network On X
 
@@ -90,17 +90,23 @@ class Problem_Scalar_Basic(PINN_Basic,Geometry_Basic):
 			- 1D-Input Network
 			- X -> 1D Array """
 
-		plt.plot(X,self.Network_Multiple(X[None,:],self.Weights)[0,:])
+		if W is None:
+			W=self.Weights
+
+		plt.plot(X,self.Network_Multiple(X[None,:],W)[0,:])
 		plt.show()
 
 
-	def Plot_2D(self,X,Y):
+	def Plot_2D(self,X,Y,W=None):
 
 		""" Plot Network On Meshgrid X x Y
 
 			Requirements:
 			- 2D-Input Network
 			- X,Y -> 1D Arrays """
+
+		if W is None:
+			W=self.Weights
 
 		XG,YG=np.meshgrid(X,Y)
 		X_Vals=X[None,:]
@@ -110,7 +116,7 @@ class Problem_Scalar_Basic(PINN_Basic,Geometry_Basic):
 			Y_Vals=np.array(NX*[YG[i,0]])[None,:]
 			Pts+=[np.concatenate((X_Vals,Y_Vals),axis=0)]
 		Pts=np.concatenate(Pts,axis=1)
-		Net_Values=self.Network_Multiple(Pts,self.Weights).reshape(XG.shape)
+		Net_Values=self.Network_Multiple(Pts,W).reshape(XG.shape)
 		Figure=plt.figure()
 		Ax=plt.axes(projection='3d')
 		Ax.plot_surface(XG,YG,Net_Values)
