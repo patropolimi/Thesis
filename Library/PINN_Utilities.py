@@ -1,5 +1,6 @@
 #! /usr/bin/python3
 
+import copy
 import dill
 import time
 import jax
