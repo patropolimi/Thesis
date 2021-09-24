@@ -23,7 +23,7 @@ def main():
 			NPL=str(input("Neurons Per Layer: "))
 			NR=str(input("Number Residuals: "))
 			I=str(input("Instance: "))
-			Name="./Models_"+Act+"/Test_"+T+"/"+F+"_"+HL+"HL_"+NPL+"NPL_"+NR+"NR_"I
+			Name="./Models_"+Act+"/Test_"+T+"/"+F+"_"+HL+"HL_"+NPL+"NPL_"+NR+"NR_"+I
 			File=open(Name,'rb')
 			Model=dill.load(File)
 			Fig1=plt.figure(1)

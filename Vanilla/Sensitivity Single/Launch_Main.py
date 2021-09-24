@@ -115,7 +115,7 @@ def main():
 							[DFT_Error,Freqs]=[np.fft.fftshift(DFT_Error),np.fft.fftshift(Freqs)]
 							Dictionary={'W': W,'Time': Elapsed,'History': History,'Relative_L2_Error': Relative_L2_Error,'DFT_Error': DFT_Error,'Freqs_DFT': Freqs,
 										'Solution': Strings[Frequency],'Network_Eval': Network_Eval,'Solution_Eval': Solution_Eval,'Batch_Size': ADAM_Batch[c]}
-							Name='Models_'+SigmaName+'/'+'Test_'+str(Test)+'/'+Frequency+'_'+str(HL)+'HL_'+str(NPL)+'NPL_'+str(NR)+'NR_'str(i+1)
+							Name='Models_'+SigmaName+'/'+'Test_'+str(Test)+'/'+Frequency+'_'+str(HL)+'HL_'+str(NPL)+'NPL_'+str(NR)+'NR_'+str(i+1)
 							File=open(Name,'wb')
 							dill.dump(Dictionary,File)
 							File.close()
