@@ -29,7 +29,6 @@ from PINN_Resolutors import *
 	Each Model -> Saved In Proper Folder As Dictionary Containing [Evaluations Made On Default Uniform Linspacing]:
 	- Final Weights
 	- Final Relative L2 Error
-	- Number Residual Points
 	- Batch Size
 	- Elapsed Learning Time
 	- History Cost Function
