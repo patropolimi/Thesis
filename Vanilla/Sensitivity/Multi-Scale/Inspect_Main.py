@@ -8,7 +8,6 @@ from PINN_Resolutors import *
 	Problem: Scalar 1D Poisson With Homogeneous Boundary Conditions In Domain [-1,1] """
 
 
-Activations={'Tanh': jnp.tanh,'Sigmoid': jax.nn.sigmoid,'ReLU': jax.nn.relu}
 Points=np.linspace(-1,1,2001)
 
 
@@ -18,12 +17,11 @@ def main():
 		if (Continue):
 			Act=str(input("Activation: "))
 			T=str(input("Test Number: "))
-			F=str(input("Frequency: "))
 			HL=str(input("Hidden Layers: "))
 			NPL=str(input("Neurons Per Layer: "))
 			NR=str(input("Number Residuals: "))
 			I=str(input("Instance: "))
-			Name="./Models_"+Act+"/Test_"+T+"/"+F+"_"+HL+"HL_"+NPL+"NPL_"+NR+"NR_"+I
+			Name="./Models_"+Act+"/Test_"+T+"/"+'Model'+"_"+HL+"HL_"+NPL+"NPL_"+NR+"NR_"+I
 			File=open(Name,'rb')
 			Model=dill.load(File)
 			Fig1=plt.figure(1)

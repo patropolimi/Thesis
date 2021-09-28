@@ -6,9 +6,9 @@ from PINN_Problems import *
 P=TemplateParameter('P')
 
 
-class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
+class Resolutor_ADAM_BFGS_Basic(P,metaclass=Template[P]):
 
-	""" Resolutor Of Differential Problem P
+	""" Resolutor Of Differential Problem P Upon Basic PINN
 
 		Optimizers:
 		- ADAM -> First Order
@@ -107,7 +107,7 @@ class Resolutor_ADAM_BFGS(P,metaclass=Template[P]):
 		Alpha=AlphaZero
 		Consecutive_Still=0
 		Iters=0
-		while (not(jnp.linalg.norm(Grad_Pre)<GradTol) and (Iters<MaxEpochs) and (Consecutive_Still<StillTol)):
+		while (not(jnp.linalg.norm(Grad_Pre)<GradTol) and not(Cost_Pre<EpsMachine) and (Iters<MaxEpochs) and (Consecutive_Still<StillTol)):
 			Direction=-(B)@(Grad_Pre)
 			Alpha=Line_Search(W,Alpha,Direction,jnp.inner(Grad_Pre,Direction),Cost_Pre)
 			S=Alpha*Direction

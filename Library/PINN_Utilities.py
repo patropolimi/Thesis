@@ -13,6 +13,7 @@ from type_templating import Template,TemplateParameter
 
 
 jax.config.update("jax_enable_x64",True)
+EpsMachine=jnp.finfo(jnp.float64).eps
 
 
 Generator=np.random.default_rng(seed=time.time_ns())
@@ -25,9 +26,9 @@ def Random_Seed():
 	return Generator.integers(0,1e5)
 
 
-def Glorot_Uniform_Basic(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Layer):
+def Glorot_Uniform(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Layer):
 
-	""" Standard Glorot Uniform Initialization """
+	""" Glorot Uniform Initialization """
 
 	np.random.seed(Random_Seed())
 	Layers=[Input_Dimension]+[Neurons_Per_Layer]*Hidden_Layers+[Output_Dimension]
@@ -40,7 +41,7 @@ def Glorot_Uniform_Basic(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_
 
 def Sample_Interior(Domain,N,Dist=1e-3):
 
-	""" Uniform Sampling (N Spots) Of Domain Interior """
+	""" Uniform Sampling (N Spots) Of Hyper-Rectangular Domain Interior """
 
 	Internal=Domain.copy()
 	Internal[:,0]+=Dist/2
@@ -50,7 +51,7 @@ def Sample_Interior(Domain,N,Dist=1e-3):
 
 def Sample_Boundary(Domain,N,Dist=1e-3):
 
-	""" Uniform Sampling Of Domain Boundary
+	""" Uniform Sampling Of Hyper-Rectangular Domain Boundary
 
 		N -> List(List(2 Integers)):
 		- N[d][0] -> Points On First Boundary Along d-th Direction/Dimension
