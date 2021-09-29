@@ -247,7 +247,7 @@ class Wave_Scalar_Basic(Wrapper_Scalar_Basic):
 
 		""" Single Network Input Contribution/Component Of:
 		 	- Second Time Derivative
-			- Laplacian """""
+			- Laplacian """
 
 		Hessian_Diagonal=jnp.diag(self.Hessian_Network_Single(X,W))
 		Gradient_TT=jnp.reshape(Hessian_Diagonal[0],(1,))
@@ -296,7 +296,7 @@ class Wave_Scalar_Adaptive(Wrapper_Scalar_Adaptive):
 
 		""" Single Network Input Contribution/Component Of:
 		 	- Second Time Derivative
-			- Laplacian """""
+			- Laplacian """
 
 		Hessian_Diagonal=jnp.diag(self.Hessian_Network_Single(X,W,A,N))
 		Gradient_TT=jnp.reshape(Hessian_Diagonal[0],(1,))
