@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Resolutors import *
+from PINN_Resolutors_Basic import *
 
 
 """ Launch Script [To Be Launched Once For Each Test] [To Be Tuned By Hand For Every Launch] -> Basic PINN Convergence Analysis (Multi-Scale)

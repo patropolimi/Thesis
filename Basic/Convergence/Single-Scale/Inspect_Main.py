@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Resolutors import *
+from PINN_Resolutors_Basic import *
 
 
 """ Inspect Main To Inspect Models Created For Single-Scale Convergence Analysis Of Basic PINN

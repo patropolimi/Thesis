@@ -162,3 +162,23 @@ def ListMatrixize(FlatArray):
 
 	L=len(Rows)
 	return [jnp.asarray(jnp.reshape(jnp.take(FlatArray,jnp.arange(Cum[l],Cum[l+1])),(Rows[l],(Cum[l+1]-Cum[l])//Rows[l]))) for l in range(L)]
+
+
+class Geometry_HyperRectangular:
+
+	""" Hyper-Rectangular Geometry For Physics-Informed Neural Networks
+
+		Content:
+		- Domain Coordinates
+		- Residual Points
+		- Boundary Labels, Points & Normal Vectors """
+
+
+	def __init__(self,Domain,NResPts,NBouPts,BouLabs):
+		self.Domain=Domain
+		self.Residual_Points=Sample_Interior(Domain,NResPts)
+		self.Boundary_Lists=Sample_Boundary(Domain,NBouPts)
+		self.Number_Residuals=NResPts
+		self.Number_Boundary_Spots=sum([self.Boundary_Lists[i].shape[1] for i in range(len(self.Boundary_Lists))])
+		self.Boundary_Normals=Set_Normals(Domain.shape[0])
+		self.Boundary_Labels=BouLabs

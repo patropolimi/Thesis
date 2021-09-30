@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Resolutors import *
+from PINN_Resolutors_Basic import *
 
 
 """ Script To Create Plots For Multi-Scale Convergence Analysis Of Basic PINN [To Be Launched Once For Each Test] [To Be Tuned For Each Launch]
@@ -27,8 +27,11 @@ for SigmaName in Activations:
 		Name="Models_"+SigmaName+"/Test_"+str(Test)+"/Models_"+ModeName+"_Plot"
 		Plot_Vector=Mode(Relative_L2_Error,axis=0)
 		Fig=plt.figure()
-		plt.loglog(Number_Residuals,Plot_Vector)
+		plt.loglog(Number_Residuals,Plot_Vector,label='L2 Relative Error')
+		plt.loglog(Number_Residuals,Number_Residuals**(-1),label='Order 1 Decrease')
+		plt.loglog(Number_Residuals,Number_Residuals**(-2),label='Order 2 Decrease')
 		plt.xticks(Number_Residuals,Number_Residuals)
+		plt.legend()
 		plt.suptitle('Error '+ModeName+' Trend')
 		plt.savefig(Name+'.eps')
 		plt.close()
