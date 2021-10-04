@@ -14,7 +14,6 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 		self.Source=jax.jit(SRC)
 		self.Exact_Boundary_Dirichlet=jax.jit(Ex_Bou_D)
 		self.Exact_Boundary_Neumann=jax.jit(Ex_Bou_N)
-		self.Residual_Values=self.Source(self.Residual_Points)
 		self.Dirichlet_Lists,self.Dirichlet_Values,self.Neumann_Lists,self.Neumann_Values,self.Periodic_Lists,self.Periodic_Lower_Points,self.Periodic_Upper_Points=Set_Boundary_Points_And_Values(self.Boundary_Lists,BouLabs,Ex_Bou_D,Ex_Bou_N)
 		self.Gradient_Network_Single=jax.jit(jax.grad(self.Network_Single))
 		self.Hessian_Network_Single=jax.jit(jax.jacobian(self.Gradient_Network_Single))

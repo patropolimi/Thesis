@@ -97,7 +97,7 @@ class Resolutor_ADAM_BFGS_Basic(P,metaclass=Template[P]):
 			return New_B
 
 		Hist=[]
-		W=np.asarray(Flatten(self.Weights))
+		W=Flatten_And_Update(self.Weights)
 		N=W.shape[0]
 		Z=np.zeros_like(W)
 		I=np.eye(N)
