@@ -8,8 +8,8 @@ class Poisson_Scalar_Adaptive(Wrapper_Scalar_Adaptive):
 	""" Poisson Scalar Problem Upon Adaptive PINN """
 
 
-	def __init__(self,ID,HL,NPL,Sigma,N,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,AdaFeatures):
-		super().__init__(ID,HL,NPL,Sigma,N,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,AdaFeatures)
+	def __init__(self,ID,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N):
+		super().__init__(ID,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
 		self.Equation=self.Laplacian
 
 
@@ -38,8 +38,8 @@ class Burgers_Scalar_Adaptive(Wrapper_Scalar_Adaptive):
 		- X: 1D Space Variable """
 
 
-	def __init__(self,HL,NPL,Sigma,Domain,N,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,Nu,AdaFeatures):
-		super().__init__(2,HL,NPL,Sigma,Domain,N,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,AdaFeatures)
+	def __init__(self,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,Nu):
+		super().__init__(2,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
 		self.Nu=Nu
 		self.Equation=self.Burgers_Left_Hand_Side
 
@@ -82,8 +82,8 @@ class Heat_Scalar_Adaptive(Wrapper_Scalar_Adaptive):
 		- X: Space Variable """
 
 
-	def __init__(self,ID,HL,NPL,Sigma,N,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,Nu,AdaFeatures):
-		super().__init__(ID,HL,NPL,Sigma,N,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,AdaFeatures)
+	def __init__(self,ID,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,Nu):
+		super().__init__(ID,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
 		self.Nu=Nu
 		self.Equation=self.Heat_Left_Hand_Side
 
@@ -124,8 +124,8 @@ class Wave_Scalar_Adaptive(Wrapper_Scalar_Adaptive):
 		- X: Space Variable """
 
 
-	def __init__(self,ID,HL,NPL,Sigma,N,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,C,AdaFeatures):
-		super().__init__(ID,HL,NPL,Sigma,N,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,AdaFeatures)
+	def __init__(self,ID,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,C):
+		super().__init__(ID,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
 		self.C=C
 		self.Equation=self.Wave_Left_Hand_Side
 
@@ -173,8 +173,8 @@ class Allen_Cahn_Scalar_Adaptive(Wrapper_Scalar_Adaptive):
 		- X: Space Variable """
 
 
-	def __init__(self,ID,HL,NPL,Sigma,N,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,Gamma1,Gamma2,AdaFeatures):
-		super().__init__(ID,HL,NPL,Sigma,N,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,AdaFeatures)
+	def __init__(self,ID,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,Gamma1,Gamma2):
+		super().__init__(ID,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
 		self.Gamma1=Gamma1
 		self.Gamma2=Gamma2
 		self.Equation=self.Allen_Cahn_Left_Hand_Side
@@ -204,7 +204,7 @@ class Allen_Cahn_Scalar_Adaptive(Wrapper_Scalar_Adaptive):
 		Evaluations=self.Network_Multiple(X,W,A,N)
 		Gradients=jax.vmap(self.Gradient_Network_Single,in_axes=(1,None,None,None),out_axes=1)(X,W,A,N)
 		Gradients_T=Gradients[0,:][None,:]
-		Laplacians=self.Laplacian(X,W)
+		Laplacians=self.Laplacian(X,W,A,N)
 		return (Gradients_T-self.Gamma1*Laplacians-self.Gamma2*(Evaluations-Evaluations**3))
 
 
@@ -215,8 +215,8 @@ class Helmholtz_Scalar_Adaptive(Wrapper_Scalar_Adaptive):
 		Input Vector -> X: Space Variable """
 
 
-	def __init__(self,ID,HL,NPL,Sigma,N,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,K,AdaFeatures):
-		super().__init__(ID,HL,NPL,Sigma,N,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,AdaFeatures)
+	def __init__(self,ID,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,K):
+		super().__init__(ID,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
 		self.K=K
 		self.Equation=self.Helmholtz_Left_Hand_Side
 

@@ -39,6 +39,19 @@ def Glorot_Uniform(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_La
 	return Weights
 
 
+def Glorot_Normal(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Layer):
+
+	""" Glorot Normal Initialization """
+
+	np.random.seed(Random_Seed())
+	Layers=[Input_Dimension]+[Neurons_Per_Layer]*Hidden_Layers+[Output_Dimension]
+	Weights=[]
+	for l in range(Hidden_Layers+1):
+		Std_Dev=np.sqrt(2/(Layers[l+1]+Layers[l]))
+		Weights.append(np.concatenate((np.random.randn(Layers[l+1],Layers[l])*Std_Dev,np.zeros((Layers[l+1],1))),axis=1))
+	return Weights
+
+
 def Sample_Interior(Domain,N,Dist=1e-3):
 
 	""" Uniform Sampling (N Spots) Of Hyper-Rectangular Domain Interior """
@@ -135,9 +148,9 @@ def Set_Boundary_Points_And_Values(BouLists,BouLabs,Ex_Bou_D,Ex_Bou_N):
 	return Dirichlet_Lists,Dirichlet_Values,Neumann_Lists,Neumann_Values,Periodic_Lists,Periodic_Lower_Points,Periodic_Upper_Points
 
 
-def Flatten(ArrayList):
+def Flatten_And_Update(ArrayList):
 
-	""" Flatten ArrayList """
+	""" Flatten ArrayList & Update Rows-Cum """
 
 	global Rows,Cum
 
@@ -154,14 +167,75 @@ def Flatten(ArrayList):
 
 
 @jax.jit
+def FastFlatten(ArrayList):
+
+	""" Fast Flatten ArrayList """
+
+	return jnp.asarray(jnp.concatenate([jnp.ravel(ArrayList[l]) for l in range(len(ArrayList))],axis=0))
+
+
+@jax.jit
 def ListMatrixize(FlatArray):
 
 	""" Matrixize FlatArray & Organize It Listwise """
 
 	global Rows,Cum
 
-	L=len(Rows)
-	return [jnp.asarray(jnp.reshape(jnp.take(FlatArray,jnp.arange(Cum[l],Cum[l+1])),(Rows[l],(Cum[l+1]-Cum[l])//Rows[l]))) for l in range(L)]
+	return [jnp.asarray(jnp.reshape(jnp.take(FlatArray,jnp.arange(Cum[l],Cum[l+1])),(Rows[l],(Cum[l+1]-Cum[l])//Rows[l]))) for l in range(len(Rows))]
+
+
+def ForwardCut_Step(Mask,Layer):
+
+	""" Utility For CutOff -> Forward Step """
+
+	Cut=False
+	R=Mask[Layer].shape[0]
+	On=jnp.sum(Mask[Layer],axis=1)
+	for r in range(R):
+		if (not(On[r])):
+			Mask[Layer+1][:,r]=False
+			Cut=True
+	return Cut
+
+
+def BackwardCut_Step(Mask,Layer):
+
+	""" Utility For CutOff -> Backward Step """
+
+	Cut=False
+	C=Mask[Layer].shape[1]-1
+	On=jnp.take(jnp.sum(Mask[Layer],axis=0),jnp.arange(0,C))
+	for c in range(C):
+		if (not On[c]):
+			Mask[Layer-1][c,:]=False
+			Cut=True
+	return Cut
+
+
+def CutOff(Mask):
+
+	""" Cut Off Redundant Weights """
+
+	L=len(Mask)
+	[Step,l]=[1,0]
+	for b in reversed(range(1,L)):
+		BackwardCut_Step(Mask,b)
+	while (l<(L-1)):
+		if (Step==1):
+			Cut=ForwardCut_Step(Mask,l)
+			if (Cut):
+				Step=-1
+			else:
+				l+=1
+		else:
+			Cut=BackwardCut_Step(Mask,l+1)
+			if (Cut):
+				if (not(l==0)):
+					l-=1
+				else:
+					Step=1
+			else:
+				Step=1
 
 
 class Geometry_HyperRectangular:
