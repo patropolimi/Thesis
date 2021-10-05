@@ -125,7 +125,7 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 		""" Update Activation Parameters """
 
 		Grad_A=self.Gradient_Cost_A(self.Weights_On,self.A,self.N,self.L,self.PDE_Default_X(),self.BC_Default_X())
-		self.A+=self.AAF_Options['Learning_Rate']*Grad_A
+		self.A-=self.AAF_Options['Learning_Rate']*Grad_A
 
 
 	def Update_L(self):
