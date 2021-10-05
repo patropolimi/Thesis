@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Grounds_Basic import *
+from Basic.PINN_Grounds import *
 
 
 class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):

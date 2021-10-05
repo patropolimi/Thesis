@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Resolutors_Basic import *
+from Basic.PINN_Resolutors import *
 
 
 """ Inspect Main To Inspect Models Created For Multi-Scale Sensitivity Analysis Of Basic PINN

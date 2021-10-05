@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Wrappers_Adaptive import *
+from Adaptive.PINN_Wrappers import *
 
 
 class Poisson_Scalar_Adaptive(Wrapper_Scalar_Adaptive):

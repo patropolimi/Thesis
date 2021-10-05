@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Resolutors_Basic import *
+from Basic.PINN_Resolutors import *
 
 
 """ Organizer Script [To Be Launched Once For Each Test] [To Be Tuned For Each Launch] -> Basic PINN Sensitivity Analysis (Multi-Scale)

@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Grounds_Adaptive import *
+from Adaptive.PINN_Grounds import *
 
 
 class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
@@ -145,7 +145,7 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 		List_Length=len(SVL)
 		Beta=[self.NAE_Options['Relaxation'][self.Hidden_Layers-1]/(SVL[l].shape[1]) for l in range(List_Length)]
 		Divisor=[np.repeat(np.sum(np.abs(SVL[l]),axis=1)[:,None],SVL[l].shape[1],axis=1) for l in range(List_Length)]
-	    LRSI=[np.asarray(np.divide(np.abs(SVL[l]),Divisor[l],out=np.zeros_like(SVL[l]),where=(np.abs(Divisor[l])>EpsMachine))) for l in range(List_Length)]
+		LRSI=[np.asarray(np.divide(np.abs(SVL[l]),Divisor[l],out=np.zeros_like(SVL[l]),where=(np.abs(Divisor[l])>EpsMachine))) for l in range(List_Length)]
 		MaskList_New=[(LRSI[l]>Beta[l]) for l in range(List_Length)]
 		CutOff(MaskList_New)
 		self.Mask=FastFlatten(MaskList_New)
@@ -168,9 +168,9 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 		I=jnp.eye(Neurons_Last_ButOne)
 		WL+=Glorot_Normal(Neurons_Last_ButOne,1,1,Neurons_Last)
 		ML+=[np.ones_like(w) for w in WL[-2:]]
-		WL[-2]=jax.ops.index_add(WL[-2],[:Neurons_Last_ButOne,:Neurons_Last_ButOne],I)
-		WL[-1]=jax.ops.index_add(WL[-1],[:,:Neurons_Last_ButOne],Out_Weights)
-		ML[-1]=jax.ops.index_update(ML[-1],[:,:Neurons_Last_ButOne],Out_Mask)
+		WL[-2]=WL[-2].at[:Neurons_Last_ButOne,:Neurons_Last_ButOne].set(I)
+		WL[-1]=WL[-1].at[:,:Neurons_Last_ButOne].set(Out_Weights)
+		ML[-1]=ML[-1].at[:,:Neurons_Last_ButOne].set(Out_Mask)
 		CutOff(ML)
 		self.Mask=Flatten_And_Update(ML)
 		self.Weights_On=jnp.take(FastFlatten(WL),self.Mask)

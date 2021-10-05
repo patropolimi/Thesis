@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Problems_Basic import *
+from Basic.PINN_Problems import *
 
 
 P=TemplateParameter('P')

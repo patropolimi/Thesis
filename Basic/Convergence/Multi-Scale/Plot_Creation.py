@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Resolutors_Basic import *
+from Basic.PINN_Resolutors import *
 
 
 """ Script To Create Plots For Multi-Scale Convergence Analysis Of Basic PINN [To Be Launched Once For Each Test] [To Be Tuned For Each Launch]

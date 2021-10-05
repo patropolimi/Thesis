@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Wrappers_Basic import *
+from Basic.PINN_Wrappers import *
 
 
 class Poisson_Scalar_Basic(Wrapper_Scalar_Basic):

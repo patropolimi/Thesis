@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Problems_Adaptive import *
+from Adaptive.PINN_Problems import *
 
 
 P=TemplateParameter('P')

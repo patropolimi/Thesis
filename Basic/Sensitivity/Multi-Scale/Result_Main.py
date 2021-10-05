@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from PINN_Resolutors_Basic import *
+from Basic.PINN_Resolutors import *
 
 
 """ Main To Show Error Result Tables -> Basic PINN Sensitivity Analysis (Multi-Scale)
