@@ -1,5 +1,6 @@
 #! /usr/bin/python3
 
+import collections
 import copy
 import dill
 import time
@@ -166,6 +167,19 @@ def Flatten_And_Update(ArrayList):
 	return np.asarray(np.concatenate(ArrayFlat,axis=0))
 
 
+def Globals(Set=None):
+
+	""" Return/Set Global Variables Rows-Cum """
+
+	global Rows,Cum
+
+	if (Set is not None):
+		Rows=Set['Rows']
+		Cum=Set['Cum']
+
+	return Rows,Cum
+
+
 @jax.jit
 def FastFlatten(ArrayList):
 
@@ -238,6 +252,25 @@ def CutOff(Mask):
 				Step=1
 
 
+@jax.jit
+def Two_Loops_Recursion(G,Mem_DeltaW,Mem_DeltaGrad,Mem_Ro):
+
+	""" Two-Loop-Recursion Algorithm For L-BFGS """
+
+	M=len(Mem_DeltaW)
+	C=jnp.inner(Mem_DeltaW[0],Mem_DeltaGrad[0])/jnp.inner(Mem_DeltaGrad,Mem_DeltaGrad)
+	A=M*[0]
+	Q=G
+	for i in range(M):
+		A[i]=Mem_Ro[i]*jnp.inner(Mem_DeltaW[i],Q)
+		Q-=A[i]*Mem_DeltaGrad[i]
+	Z=C*Q
+	for i in range(M):
+		B=Mem_Ro[M-1-i]*jnp.inner(Mem_DeltaGrad[M-1-i],Z)
+		Z+=Mem_DeltaW[M-1-i]*(A[M-1-i]-B)
+	return -Z
+
+
 class Geometry_HyperRectangular:
 
 	""" Hyper-Rectangular Geometry For Physics-Informed Neural Networks
@@ -256,3 +289,20 @@ class Geometry_HyperRectangular:
 		self.Number_Boundary_Spots=sum([self.Boundary_Lists[i].shape[1] for i in range(len(self.Boundary_Lists))])
 		self.Boundary_Normals=Set_Normals(Domain.shape[0])
 		self.Boundary_Labels=BouLabs
+
+
+class Cyclic_Deque:
+
+	""" Cyclic Deque """
+
+
+	def __init__(self,N):
+		self.Deque=collections.deque(N*[0])
+
+
+	def Insert(self,V):
+
+		""" Pop Last Element & Insert New Element In Front """
+
+		self.Deque.pop()
+		self.Deque.appendleft(V)

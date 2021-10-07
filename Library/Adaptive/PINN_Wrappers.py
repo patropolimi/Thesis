@@ -92,7 +92,7 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 
 		""" Cost Function Computation """
 
-		return self.PDE(XR,W,A,N,jnp.take(L,jnp.arange(-XB['Number_Boundary_Spots'],0,1)))+self.BC(XB,W,A,N,jnp.take(L,jnp.arange(0,XB['Number_Boundary_Spots'],1)))
+		return self.PDE(XR,W,A,N,jnp.take(L,jnp.arange(-XB['Number_Residuals'],0,1)))+self.BC(XB,W,A,N,jnp.take(L,jnp.arange(0,XB['Number_Boundary_Spots'],1)))
 
 
 	def RAR(self):
@@ -143,7 +143,7 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 		WL=self.ListFill(self.Weights_On)
 		SVL=self.ListFill(SV)
 		List_Length=len(SVL)
-		Beta=[self.NAE_Options['Relaxation'][self.Hidden_Layers-1]/(SVL[l].shape[1]) for l in range(List_Length)]
+		Beta=[self.NAE_Options['Relaxation'][l]/(SVL[l].shape[1]) for l in range(List_Length)]
 		Divisor=[np.repeat(np.sum(np.abs(SVL[l]),axis=1)[:,None],SVL[l].shape[1],axis=1) for l in range(List_Length)]
 		LRSI=[np.asarray(np.divide(np.abs(SVL[l]),Divisor[l],out=np.zeros_like(SVL[l]),where=(np.abs(Divisor[l])>EpsMachine))) for l in range(List_Length)]
 		MaskList_New=[(LRSI[l]>Beta[l]) for l in range(List_Length)]
