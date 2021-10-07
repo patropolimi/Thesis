@@ -96,7 +96,6 @@ class Resolutor_ADAM_BFGS_Basic(P,metaclass=Template[P]):
 			New_B+=M2
 			return New_B
 
-		Hist=[]
 		W=Flatten_And_Update(self.Weights)
 		N=W.shape[0]
 		Z=np.zeros_like(W)
@@ -107,6 +106,7 @@ class Resolutor_ADAM_BFGS_Basic(P,metaclass=Template[P]):
 		Alpha=AlphaZero
 		Consecutive_Still=0
 		Iters=0
+		Hist=[Cost_Pre]
 		while (not(jnp.linalg.norm(Grad_Pre)<GradTol) and not(Cost_Pre<EpsMachine) and (Iters<MaxEpochs) and (Consecutive_Still<StillTol)):
 			Direction=-(B)@(Grad_Pre)
 			Alpha=Line_Search(W,Alpha,Direction,jnp.inner(Grad_Pre,Direction),Cost_Pre)
@@ -117,13 +117,13 @@ class Resolutor_ADAM_BFGS_Basic(P,metaclass=Template[P]):
 			Y=Grad_Post-Grad_Pre
 			Denominator=jnp.inner(S,Y)
 			B=Update_B(B,S,Y,I,Denominator)
+			Hist+=[Cost_Post]
 			if (not(jnp.all(jnp.isfinite(B)))):
 				break
 			if (np.abs(Alpha)<AlphaTol):
 				Consecutive_Still+=1
 			else:
 				Consecutive_Still=0
-			Hist+=[Cost_Pre]
 			Cost_Pre=Cost_Post
 			Grad_Pre=np.copy(Grad_Post)
 			Iters+=1
@@ -136,10 +136,8 @@ class Resolutor_ADAM_BFGS_Basic(P,metaclass=Template[P]):
 		""" Learning Execution """
 
 		Tot_Hist=[]
-		if (ADAM_Steps):
-			print("ADAM Progressing ... ")
-			Tot_Hist+=self.ADAM(ADAM_Steps,ADAM_Batch,ADAM_Params)
-		if (BFGS_MaxSteps):
-			print("BFGS Progressing ... ")
-			Tot_Hist+=self.BFGS(BFGS_MaxSteps,BFGS_Params)
+		print("ADAM Progressing ... ")
+		Tot_Hist+=self.ADAM(ADAM_Steps,ADAM_Batch,ADAM_Params)[:-1]
+		print("BFGS Progressing ... ")
+		Tot_Hist+=self.BFGS(BFGS_MaxSteps,BFGS_Params)
 		return Tot_Hist
