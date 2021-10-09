@@ -92,6 +92,7 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 		if W is None:
 			W=self.Weights
 
+		Figure=plt.figure()
 		plt.plot(X,self.Network_Multiple(X[None,:],W)[0,:])
 		plt.show()
 

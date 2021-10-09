@@ -24,7 +24,7 @@ def Random_Seed():
 
 	""" Generating Random Seed """
 
-	return Generator.integers(0,1e5)
+	return int(Generator.integers(0,1e5))
 
 
 def Glorot_Uniform(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Layer):
@@ -207,8 +207,9 @@ def ForwardCut_Step(Mask,Layer):
 	On=jnp.sum(Mask[Layer],axis=1)
 	for r in range(R):
 		if (not(On[r])):
+			if (np.any(Mask[Layer+1][:,r])):
+				Cut=True
 			Mask[Layer+1][:,r]=False
-			Cut=True
 	return Cut
 
 
@@ -221,8 +222,9 @@ def BackwardCut_Step(Mask,Layer):
 	On=jnp.take(jnp.sum(Mask[Layer],axis=0),jnp.arange(0,C))
 	for c in range(C):
 		if (not On[c]):
+			if (np.any(Mask[Layer-1][c,:])):
+				Cut=True
 			Mask[Layer-1][c,:]=False
-			Cut=True
 	return Cut
 
 
@@ -252,25 +254,6 @@ def CutOff(Mask):
 				Step=1
 
 
-@jax.jit
-def Two_Loops_Recursion(G,Mem_DeltaW,Mem_DeltaGrad,Mem_Ro):
-
-	""" Two-Loop-Recursion Algorithm For L-BFGS """
-
-	M=len(Mem_DeltaW)
-	C=jnp.inner(Mem_DeltaW[0],Mem_DeltaGrad[0])/jnp.inner(Mem_DeltaGrad,Mem_DeltaGrad)
-	A=M*[0]
-	Q=G
-	for i in range(M):
-		A[i]=Mem_Ro[i]*jnp.inner(Mem_DeltaW[i],Q)
-		Q-=A[i]*Mem_DeltaGrad[i]
-	Z=C*Q
-	for i in range(M):
-		B=Mem_Ro[M-1-i]*jnp.inner(Mem_DeltaGrad[M-1-i],Z)
-		Z+=Mem_DeltaW[M-1-i]*(A[M-1-i]-B)
-	return -Z
-
-
 class Geometry_HyperRectangular:
 
 	""" Hyper-Rectangular Geometry For Physics-Informed Neural Networks
@@ -296,8 +279,8 @@ class Cyclic_Deque:
 	""" Cyclic Deque """
 
 
-	def __init__(self,N):
-		self.Deque=collections.deque(N*[0])
+	def __init__(self,N,E):
+		self.Deque=collections.deque(N*[E])
 
 
 	def Insert(self,V):
@@ -306,3 +289,10 @@ class Cyclic_Deque:
 
 		self.Deque.pop()
 		self.Deque.appendleft(V)
+
+
+	def List(self):
+
+		""" Deque As List """
+
+		return list(self.Deque)

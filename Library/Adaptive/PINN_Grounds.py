@@ -22,10 +22,10 @@ class PINN_Adaptive:
 		self.Activation=Sigma
 		self.A=np.array([1.0])
 		self.N=np.array([1.0])
-		W_List=Glorot_Uniform_Basic(ID,OD,1,AdaFeatures['NAE']['Initial_Neurons'])
-		M_List=[np.ones_like(w) for w in W_List]
-		self.Weights_On=Flatten_And_Update(W_List)
-		self.Mask=FastFlatten(M_List)
+		W_List=Glorot_Uniform(ID,OD,1,AdaFeatures['NAE']['Initial_Neurons'])
+		M_List=[np.ones_like(w,dtype=bool) for w in W_List]
+		self.Mask=Flatten_And_Update(M_List)
+		self.Weights_On=FastFlatten(W_List)
 		self.Hidden_Layers=1
 
 
@@ -50,6 +50,6 @@ class PINN_Adaptive:
 
 		""" Create List[2D Array] Inserting Active Weights W_Active According To PINN's Mask """
 
-		W_Full=np.zeros_like(self.Mask)
-		W_Full[self.Mask]=W_Active
+		W_Full=jnp.zeros_like(self.Mask,dtype=float)
+		W_Full=jax.ops.index_update(W_Full,self.Mask,W_Active)
 		return ListMatrixize(W_Full)

@@ -11,7 +11,8 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 	def __init__(self,ID,Sigma,AdaFeatures,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N):
 		PINN_Adaptive.__init__(self,ID,1,Sigma,AdaFeatures)
 		Geometry_HyperRectangular.__init__(self,Domain,NResPts,NBouPts,BouLabs)
-		self.L=np.ones(self.Number_Boundary_Spots+self.Number_Residuals)
+		self.L={'PDE': np.ones(self.Number_Residuals),'BC': np.ones(self.Number_Boundary_Spots)}
+		self.Sampling=sm.Random(xlimits=self.Domain)
 		self.Source=jax.jit(SRC)
 		self.Exact_Boundary_Dirichlet=jax.jit(Ex_Bou_D)
 		self.Exact_Boundary_Neumann=jax.jit(Ex_Bou_N)
@@ -92,32 +93,25 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 
 		""" Cost Function Computation """
 
-		return self.PDE(XR,W,A,N,jnp.take(L,jnp.arange(-XB['Number_Residuals'],0,1)))+self.BC(XB,W,A,N,jnp.take(L,jnp.arange(0,XB['Number_Boundary_Spots'],1)))
+		return self.PDE(XR,W,A,N,L['PDE'])+self.BC(XB,W,A,N,L['BC'])
 
 
 	def RAR(self):
 
-		""" Residual Adaptive Refinement
+		""" Residual Adaptive Refinement """
 
-			Two Possible Sampling Methods:
-			- RND -> Random
-			- LHS -> Latin Hypercube Sampling """
-
-		if (self.RAR_Options['Mode']=='RND'):
-			Sampling=sm.Random(xlimits=self.Domain)
-		elif (self.RAR_Options['Mode']=='LHS'):
-			Sampling=sm.LHS(xlimits=self.Domain)
-		Pool=Sampling(self.RAR_Options['PoolSize']).T
-		Values=((self.Source(Pool)-self.Equation(Pool,W,A,N))[0,:])**2
-		Standard=self.PDE(self.PDE_Default_X(),self.Weights_On,self.A,self.N,np.ones(self.Number_Residuals))
-		Candidate_Indexes=np.argpartition(Values,-self.RAR_Options['MaxAdd'])[-self.RAR_Options['MaxAdd']:]
-		Candidate_Points=Pool[:,Candidate_Indexes]
-		Candidate_Values=Values[Candidate_Indexes]
-		Additional_Points=Candidate_Points[:,Candidate_Values>Standard]
-		Number_NewPoints=Additional_Points.shape[1]
-		self.Residual_Points=np.concatenate((self.Residual_Points,Additional_Points),axis=1)
-		self.Number_Residuals+=Number_NewPoints
-		self.L=np.concatenate((self.L,np.ones(Number_NewPoints)),axis=0)
+		if (self.Number_Residuals<self.RAR_Options['MaxResiduals']):
+			Pool=self.Sampling(self.RAR_Options['PoolSize']).T
+			Values=((self.Source(Pool)-self.Equation(Pool,self.Weights_On,self.A,self.N))[0,:])**2
+			Standard=self.PDE(self.PDE_Default_X(),self.Weights_On,self.A,self.N,np.ones(self.Number_Residuals))
+			Candidate_Indexes=np.argsort(Values,kind='quicksort')[-self.RAR_Options['MaxAdd']:]
+			Candidate_Points=Pool[:,Candidate_Indexes]
+			Candidate_Values=Values[Candidate_Indexes]
+			Additional_Points=Candidate_Points[:,Candidate_Values>Standard]
+			Number_NewPoints=Additional_Points.shape[1]
+			self.Residual_Points=np.concatenate((self.Residual_Points,Additional_Points),axis=1)
+			self.Number_Residuals+=Number_NewPoints
+			self.L['PDE']=np.concatenate((self.L['PDE'],np.ones(Number_NewPoints)),axis=0)
 
 
 	def Update_A(self):
@@ -133,7 +127,8 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 		""" Update Loss Weights """
 
 		Grad_L=self.Gradient_Cost_L(self.Weights_On,self.A,self.N,self.L,self.PDE_Default_X(),self.BC_Default_X())
-		self.L+=self.SAM_Options['Learning_Rate']*Grad_L
+		self.L['PDE']+=self.SAM_Options['Learning_Rate']*Grad_L['PDE']
+		self.L['BC']+=self.SAM_Options['Learning_Rate']*Grad_L['BC']
 
 
 	def Pruning(self,SV):
@@ -148,8 +143,8 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 		LRSI=[np.asarray(np.divide(np.abs(SVL[l]),Divisor[l],out=np.zeros_like(SVL[l]),where=(np.abs(Divisor[l])>EpsMachine))) for l in range(List_Length)]
 		MaskList_New=[(LRSI[l]>Beta[l]) for l in range(List_Length)]
 		CutOff(MaskList_New)
-		self.Mask=FastFlatten(MaskList_New)
-		self.Weights_On=jnp.take(FastFlatten(WL),self.Mask)
+		self.Mask=np.asarray(FastFlatten(MaskList_New))
+		self.Weights_On=FastFlatten(WL)[self.Mask]
 
 
 	def Growing(self):
@@ -159,24 +154,26 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 		self.Hidden_Layers+=1
 		self.N=np.concatenate((self.N,np.array([self.AAF_Options['Scaling_Increase_Factor']**(self.Hidden_Layers-1)])),axis=0)
 		self.A=np.concatenate((self.A,np.array([1.0/self.N[-1]])),axis=0)
+		ML=[np.copy(m) for m in ListMatrixize(self.Mask)]
 		WL=self.ListFill(self.Weights_On)
-		ML=ListMatrixize(self.Mask)
 		Neurons_Last_ButOne=WL[-1].shape[1]-1
-		Neurons_Last=np.ceil(self.NAE_Options['Initial_Neurons']*(self.NAE_Options['Neuron_Increase_Factor']**(self.Hidden_Layers-1)))
-		Out_Weights=WL.pop()
+		Neurons_Last=int(np.ceil(self.NAE_Options['Initial_Neurons']*(self.NAE_Options['Neuron_Increase_Factor']**(self.Hidden_Layers-1))))
 		Out_Mask=ML.pop()
+		Out_Weights=WL.pop()
 		I=jnp.eye(Neurons_Last_ButOne)
 		WL+=Glorot_Normal(Neurons_Last_ButOne,1,1,Neurons_Last)
-		ML+=[np.ones_like(w) for w in WL[-2:]]
-		WL[-2]=WL[-2].at[:Neurons_Last_ButOne,:Neurons_Last_ButOne].set(I)
-		WL[-1]=WL[-1].at[:,:Neurons_Last_ButOne].set(Out_Weights)
-		ML[-1]=ML[-1].at[:,:Neurons_Last_ButOne].set(Out_Mask)
+		ML+=[np.ones_like(w,dtype=bool) for w in WL[-2:]]
+		WL[-2][:Neurons_Last_ButOne,:Neurons_Last_ButOne]+=I
+		WL[-1][:,:Neurons_Last_ButOne]+=Out_Weights[:,:-1]
+		WL[-1][:,-1]+=Out_Weights[:,-1]
+		ML[-1][:,:Neurons_Last_ButOne]=Out_Mask[:,:-1]
+		ML[-1][:,-1]=Out_Mask[:,-1]
 		CutOff(ML)
 		self.Mask=Flatten_And_Update(ML)
-		self.Weights_On=jnp.take(FastFlatten(WL),self.Mask)
+		self.Weights_On=FastFlatten(WL)[self.Mask]
 
 
-	def Plot_1D(self,X,W=None,A=None,N=None,Iters=None,SaveName=None):
+	def Plot_1D(self,X,W=None,A=None,N=None,Name=None):
 
 		""" Plot Network On X
 
@@ -193,14 +190,11 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 
 		Figure=plt.figure()
 		plt.plot(X,self.Network_Multiple(X[None,:],W,A,N)[0,:])
-		if (Iters is not(None)):
-			plt.suptitile(str(Iters)+' Iterations')
-		if (SaveName is not(None)):
-			plt.savefig(SaveName+'.eps',format='eps')
-		plt.show()
+		#plt.show()
+		plt.savefig(Name+'.eps',format='eps')
 
 
-	def Plot_2D(self,X,Y,W=None,A=None,N=None,Iters=None,SaveName=None):
+	def Plot_2D(self,X,Y,W=None,A=None,N=None):
 
 		""" Plot Network On Meshgrid X x Y
 
@@ -227,10 +221,6 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 		Figure=plt.figure()
 		Ax=plt.axes(projection='3d')
 		Ax.plot_surface(XG,YG,Net_Values)
-		if (Iters is not(None)):
-			plt.suptitile(str(Iters)+' Iterations')
-		if (SaveName is not(None)):
-			plt.savefig(SaveName+'.eps',format='eps')
 		plt.show()
 
 
