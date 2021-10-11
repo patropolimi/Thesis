@@ -32,7 +32,7 @@ def Glorot_Uniform(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_La
 	""" Glorot Uniform Initialization """
 
 	np.random.seed(Random_Seed())
-	Layers=[Input_Dimension]+[Neurons_Per_Layer]*Hidden_Layers+[Output_Dimension]
+	Layers=[Input_Dimension]+[Neurons_Per_Layer[l] for l in range(Hidden_Layers)]+[Output_Dimension]
 	Weights=[]
 	for l in range(Hidden_Layers+1):
 		Limit=np.sqrt(6/(Layers[l+1]+Layers[l]))
@@ -45,7 +45,7 @@ def Glorot_Normal(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Lay
 	""" Glorot Normal Initialization """
 
 	np.random.seed(Random_Seed())
-	Layers=[Input_Dimension]+[Neurons_Per_Layer]*Hidden_Layers+[Output_Dimension]
+	Layers=[Input_Dimension]+[Neurons_Per_Layer[l] for l in range(Hidden_Layers)]+[Output_Dimension]
 	Weights=[]
 	for l in range(Hidden_Layers+1):
 		Std_Dev=np.sqrt(2/(Layers[l+1]+Layers[l]))
@@ -53,17 +53,14 @@ def Glorot_Normal(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Lay
 	return Weights
 
 
-def Sample_Interior(Domain,N,Dist=1e-3):
+def Sample_Interior(Domain,N):
 
 	""" Uniform Sampling (N Spots) Of Hyper-Rectangular Domain Interior """
 
-	Internal=Domain.copy()
-	Internal[:,0]+=Dist/2
-	Internal[:,1]-=Dist/2
-	return sm.FullFactorial(xlimits=Internal)(N).T
+	return sm.LHS(xlimits=Domain)(N).T
 
 
-def Sample_Boundary(Domain,N,Dist=1e-3):
+def Sample_Boundary(Domain,N):
 
 	""" Uniform Sampling Of Hyper-Rectangular Domain Boundary
 
@@ -77,6 +74,7 @@ def Sample_Boundary(Domain,N,Dist=1e-3):
 
 	Dim=len(N)
 	Boundary_Points=[]
+	Number_Boundary_Spots=0
 	if (Dim==1):
 		if (N[0][0]):
 			Boundary_Points+=[np.array([[Domain[0,0]]])]
@@ -86,12 +84,10 @@ def Sample_Boundary(Domain,N,Dist=1e-3):
 			Boundary_Points+=[np.array([[Domain[0,1]]])]
 		else:
 			Boundary_Points+=[np.array([[]])]
+		Number_Boundary_Spots+=N[0][0]+N[0][1]
 	else:
-		Internal=Domain.copy()
-		Internal[:,0]+=Dist/2
-		Internal[:,1]-=Dist/2
 		for d in range(Dim):
-			Sampling=sm.FullFactorial(xlimits=np.concatenate((Internal[:d,:],Internal[d+1:,:]),axis=0))
+			Sampling=sm.LHS(xlimits=np.concatenate((Domain[:d,:],Domain[d+1:,:]),axis=0))
 			if (N[d][0]):
 				Samples_LB=Sampling(N[d][0])
 				Boundary_Points.append(np.concatenate((Samples_LB[:,:d],Domain[d,0]*np.ones((N[d][0],1)),Samples_LB[:,d:]),axis=1).T)
@@ -102,12 +98,13 @@ def Sample_Boundary(Domain,N,Dist=1e-3):
 				Boundary_Points.append(np.concatenate((Samples_UB[:,:d],Domain[d,1]*np.ones((N[d][1],1)),Samples_UB[:,d:]),axis=1).T)
 			else:
 				Boundary_Points.append(np.array([[]]))
-	return Boundary_Points
+			Number_Boundary_Spots+=N[d][0]+N[d][1]
+	return Boundary_Points,Number_Boundary_Spots
 
 
 def Set_Normals(Dim):
 
-	""" Setting Normal Vectors For Dim-Dimensional Hyper-Rectangular Domain """
+	""" Setting Normal Vectors For Hyper-Rectangular Domain """
 
 	Normals=np.zeros((Dim,2*Dim))
 	Normals[:,::2]=-np.eye(Dim)
@@ -149,7 +146,20 @@ def Set_Boundary_Points_And_Values(BouLists,BouLabs,Ex_Bou_D,Ex_Bou_N):
 	return Dirichlet_Lists,Dirichlet_Values,Neumann_Lists,Neumann_Values,Periodic_Lists,Periodic_Lower_Points,Periodic_Upper_Points
 
 
-def Flatten_And_Update(ArrayList):
+def Globals(Set=None):
+
+	""" Return/Set Global Variables Rows-Cum """
+
+	global Rows,Cum
+
+	if Set is not None:
+		Rows=Set['Rows']
+		Cum=Set['Cum']
+
+	return Rows,Cum
+
+
+def Flatten_SetGlobals(ArrayList):
 
 	""" Flatten ArrayList & Update Rows-Cum """
 
@@ -164,20 +174,7 @@ def Flatten_And_Update(ArrayList):
 		Rows[l]=s[0]
 		Cum[l+1]=s[0]*s[1]+Cum[l]
 		ArrayFlat+=[np.ravel(ArrayList[l])]
-	return np.asarray(np.concatenate(ArrayFlat,axis=0))
-
-
-def Globals(Set=None):
-
-	""" Return/Set Global Variables Rows-Cum """
-
-	global Rows,Cum
-
-	if (Set is not None):
-		Rows=Set['Rows']
-		Cum=Set['Cum']
-
-	return Rows,Cum
+	return np.asarray(np.concatenate(ArrayFlat,axis=0)),Globals({'Rows': Rows,'Cum': Cum})
 
 
 @jax.jit
@@ -204,12 +201,12 @@ def ForwardCut_Step(Mask,Layer):
 
 	Cut=False
 	R=Mask[Layer].shape[0]
-	On=jnp.sum(Mask[Layer],axis=1)
+	On=np.sum(Mask[Layer],axis=1)
 	for r in range(R):
 		if (not(On[r])):
 			if (np.any(Mask[Layer+1][:,r])):
 				Cut=True
-			Mask[Layer+1][:,r]=False
+				Mask[Layer+1][:,r]=False
 	return Cut
 
 
@@ -219,12 +216,12 @@ def BackwardCut_Step(Mask,Layer):
 
 	Cut=False
 	C=Mask[Layer].shape[1]-1
-	On=jnp.take(jnp.sum(Mask[Layer],axis=0),jnp.arange(0,C))
+	On=np.take(np.sum(Mask[Layer],axis=0),np.arange(0,C))
 	for c in range(C):
 		if (not On[c]):
 			if (np.any(Mask[Layer-1][c,:])):
 				Cut=True
-			Mask[Layer-1][c,:]=False
+				Mask[Layer-1][c,:]=False
 	return Cut
 
 
@@ -233,54 +230,52 @@ def CutOff(Mask):
 	""" Cut Off Redundant Weights """
 
 	L=len(Mask)
-	[Step,l]=[1,0]
+	[Step,l]=['F',0]
 	for b in reversed(range(1,L)):
 		BackwardCut_Step(Mask,b)
 	while (l<(L-1)):
-		if (Step==1):
-			Cut=ForwardCut_Step(Mask,l)
-			if (Cut):
-				Step=-1
+		if (Step=='F'):
+			if (ForwardCut_Step(Mask,l)):
+				Step='B'
 			else:
 				l+=1
 		else:
-			Cut=BackwardCut_Step(Mask,l+1)
-			if (Cut):
+			if (BackwardCut_Step(Mask,l+1)):
 				if (not(l==0)):
 					l-=1
 				else:
-					Step=1
+					Step='F'
 			else:
-				Step=1
+				Step='F'
 
 
 class Geometry_HyperRectangular:
 
-	""" Hyper-Rectangular Geometry For Physics-Informed Neural Networks
-
-		Content:
-		- Domain Coordinates
-		- Residual Points
-		- Boundary Labels, Points & Normal Vectors """
+	""" Hyper-Rectangular Geometry For Physics-Informed Neural Networks """
 
 
-	def __init__(self,Domain,NResPts,NBouPts,BouLabs):
+	def __init__(self,Domain):
 		self.Domain=Domain
-		self.Residual_Points=Sample_Interior(Domain,NResPts)
-		self.Boundary_Lists=Sample_Boundary(Domain,NBouPts)
-		self.Number_Residuals=NResPts
-		self.Number_Boundary_Spots=sum([self.Boundary_Lists[i].shape[1] for i in range(len(self.Boundary_Lists))])
-		self.Boundary_Normals=Set_Normals(Domain.shape[0])
-		self.Boundary_Labels=BouLabs
+		self.Domain['Residual_Points']=Sample_Interior(Domain['Limits'],Domain['Number_Residuals'])
+		self.Domain['Boundary_Lists'],self.Domain['Number_Boundary_Spots']=Sample_Boundary(Domain['Limits'],Domain['Number_Boundary_Points'])
+		self.Domain['Boundary_Normals']=Set_Normals(Domain['Dimension'])
+		self.Domain['Boundary_Labels']=Domain['Boundary_Labels']
 
 
 class Cyclic_Deque:
 
-	""" Cyclic Deque """
+	""" Cyclic Homogeneous Deque """
 
 
-	def __init__(self,N,E):
-		self.Deque=collections.deque(N*[E])
+	def __init__(self,N,Element):
+		self.Deque=collections.deque(N*[Element])
+
+
+	def List(self):
+
+		""" Deque As List """
+
+		return list(self.Deque)
 
 
 	def Insert(self,V):
@@ -289,10 +284,3 @@ class Cyclic_Deque:
 
 		self.Deque.pop()
 		self.Deque.appendleft(V)
-
-
-	def List(self):
-
-		""" Deque As List """
-
-		return list(self.Deque)

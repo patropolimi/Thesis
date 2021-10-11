@@ -5,11 +5,13 @@ from Basic.PINN_Wrappers import *
 
 class Poisson_Scalar_Basic(Wrapper_Scalar_Basic):
 
-	""" Poisson Scalar Problem Upon Basic PINN """
+	""" Poisson Scalar Problem Upon Basic PINN
+
+		Input Vector -> X: Space Variable """
 
 
-	def __init__(self,ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N):
-		super().__init__(ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
+	def __init__(self,Architecture,Domain,Data):
+		super().__init__(Architecture,Domain,Data)
 		self.Equation=self.Laplacian
 
 
@@ -38,9 +40,10 @@ class Burgers_Scalar_Basic(Wrapper_Scalar_Basic):
 		- X: 1D Space Variable """
 
 
-	def __init__(self,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,Nu):
-		super().__init__(2,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
-		self.Nu=Nu
+	def __init__(self,Architecture,Domain,Data):
+		Architecture['Input_Dimension']=2
+		super().__init__(Architecture,Domain,Data)
+		self.Data['Nu']=Data['Nu']
 		self.Equation=self.Burgers_Left_Hand_Side
 
 
@@ -70,7 +73,7 @@ class Burgers_Scalar_Basic(Wrapper_Scalar_Basic):
 		Gradients_T=Gradients[0,:][None,:]
 		Gradients_X=Gradients[1,:][None,:]
 		Laplacians=self.Laplacian(X,W)
-		return (Gradients_T+Evaluations*Gradients_X-self.Nu*Laplacians)
+		return (Gradients_T+Evaluations*Gradients_X-self.Data['Nu']*Laplacians)
 
 
 class Heat_Scalar_Basic(Wrapper_Scalar_Basic):
@@ -82,9 +85,9 @@ class Heat_Scalar_Basic(Wrapper_Scalar_Basic):
 		- X: Space Variable """
 
 
-	def __init__(self,ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,Nu):
-		super().__init__(ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
-		self.Nu=Nu
+	def __init__(self,Architecture,Domain,Data):
+		super().__init__(Architecture,Domain,Data)
+		self.Data['Nu']=Data['Nu']
 		self.Equation=self.Heat_Left_Hand_Side
 
 
@@ -112,7 +115,7 @@ class Heat_Scalar_Basic(Wrapper_Scalar_Basic):
 		Gradients=jax.vmap(self.Gradient_Network_Single,in_axes=(1,None),out_axes=1)(X,W)
 		Gradients_T=Gradients[0,:][None,:]
 		Laplacians=self.Laplacian(X,W)
-		return (Gradients_T-self.Nu*Laplacians)
+		return (Gradients_T-self.Data['Nu']*Laplacians)
 
 
 class Wave_Scalar_Basic(Wrapper_Scalar_Basic):
@@ -124,9 +127,9 @@ class Wave_Scalar_Basic(Wrapper_Scalar_Basic):
 		- X: Space Variable """
 
 
-	def __init__(self,ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,C):
-		super().__init__(ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
-		self.C=C
+	def __init__(self,Architecture,Domain,Data):
+		super().__init__(Architecture,Domain,Data)
+		self.Data['C']=Data['C']
 		self.Equation=self.Wave_Left_Hand_Side
 
 
@@ -161,7 +164,7 @@ class Wave_Scalar_Basic(Wrapper_Scalar_Basic):
 		Second_Order_Elements=Gradient_TT_And_Laplacian(X,W)
 		Gradients_TT=Second_Order_Elements[0,:][None,:]
 		Laplacians=Second_Order_Elements[1,:][None,:]
-		return (Gradients_TT-(self.C**2)*Laplacians)
+		return (Gradients_TT-(self.Data['C']**2)*Laplacians)
 
 
 class Allen_Cahn_Scalar_Basic(Wrapper_Scalar_Basic):
@@ -173,10 +176,10 @@ class Allen_Cahn_Scalar_Basic(Wrapper_Scalar_Basic):
 		- X: Space Variable """
 
 
-	def __init__(self,ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,Gamma1,Gamma2):
-		super().__init__(ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
-		self.Gamma1=Gamma1
-		self.Gamma2=Gamma2
+	def __init__(self,Architecture,Domain,Data):
+		super().__init__(Architecture,Domain,Data)
+		self.Data['Gamma1']=Data['Gamma1']
+		self.Data['Gamma2']=Data['Gamma2']
 		self.Equation=self.Allen_Cahn_Left_Hand_Side
 
 
@@ -205,7 +208,7 @@ class Allen_Cahn_Scalar_Basic(Wrapper_Scalar_Basic):
 		Gradients=jax.vmap(self.Gradient_Network_Single,in_axes=(1,None),out_axes=1)(X,W)
 		Gradients_T=Gradients[0,:][None,:]
 		Laplacians=self.Laplacian(X,W)
-		return (Gradients_T-self.Gamma1*Laplacians-self.Gamma2*(Evaluations-Evaluations**3))
+		return (Gradients_T-self.Data['Gamma1']*Laplacians-self.Data['Gamma2']*(Evaluations-Evaluations**3))
 
 
 class Helmholtz_Scalar_Basic(Wrapper_Scalar_Basic):
@@ -215,9 +218,9 @@ class Helmholtz_Scalar_Basic(Wrapper_Scalar_Basic):
 		Input Vector -> X: Space Variable """
 
 
-	def __init__(self,ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N,K):
-		super().__init__(ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N)
-		self.K=K
+	def __init__(self,Architecture,Domain,Data):
+		super().__init__(Architecture,Domain,Data)
+		self.Data['K']=Data['K']
 		self.Equation=self.Helmholtz_Left_Hand_Side
 
 
@@ -244,4 +247,4 @@ class Helmholtz_Scalar_Basic(Wrapper_Scalar_Basic):
 
 		Evaluations=self.Network_Multiple(X,W)
 		Laplacians=self.Laplacian(X,W)
-		return (Laplacians+(self.K**2)*Evaluations)
+		return (Laplacians+(self.Data['K']**2)*Evaluations)

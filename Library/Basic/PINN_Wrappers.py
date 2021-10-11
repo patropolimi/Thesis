@@ -8,13 +8,15 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 	""" Wrapper For Scalar-Output Problems Built Upon Basic PINN """
 
 
-	def __init__(self,ID,HL,NPL,Sigma,Domain,NResPts,NBouPts,BouLabs,SRC,Ex_Bou_D,Ex_Bou_N):
-		PINN_Basic.__init__(self,ID,1,HL,NPL,Sigma)
-		Geometry_HyperRectangular.__init__(self,Domain,NResPts,NBouPts,BouLabs)
-		self.Source=jax.jit(SRC)
-		self.Exact_Boundary_Dirichlet=jax.jit(Ex_Bou_D)
-		self.Exact_Boundary_Neumann=jax.jit(Ex_Bou_N)
-		self.Dirichlet_Lists,self.Dirichlet_Values,self.Neumann_Lists,self.Neumann_Values,self.Periodic_Lists,self.Periodic_Lower_Points,self.Periodic_Upper_Points=Set_Boundary_Points_And_Values(self.Boundary_Lists,BouLabs,Ex_Bou_D,Ex_Bou_N)
+	def __init__(self,Architecture,Domain,Data):
+		Architecture['Output_Dimension']=1
+		PINN_Basic.__init__(self,Architecture)
+		Geometry_HyperRectangular.__init__(self,Domain)
+		self.Data=Data
+		self.Data['Source']=jax.jit(Data['Source'])
+		self.Data['Exact_Dirichlet']=jax.jit(Data['Exact_Dirichlet'])
+		self.Data['Exact_Neumann']=jax.jit(Data['Exact_Neumann'])
+		self.Data['Dirichlet_Lists'],self.Data['Dirichlet_Values'],self.Data['Neumann_Lists'],self.Data['Neumann_Values'],self.Data['Periodic_Lists'],self.Data['Periodic_Lower_Points'],self.Data['Periodic_Upper_Points']=Set_Boundary_Points_And_Values(self.Domain['Boundary_Lists'],Domain['Boundary_Labels'],Data['Exact_Dirichlet'],Data['Exact_Neumann'])
 		self.Gradient_Network_Single=jax.jit(jax.grad(self.Network_Single))
 		self.Hessian_Network_Single=jax.jit(jax.jacobian(self.Gradient_Network_Single))
 		self.Gradient_Cost=jax.jit(jax.grad(self.Cost))
@@ -30,16 +32,17 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 			- X: 1-Dimensional Array """
 
 		Y=X
-		for l in range(len(W)-1):
-			Y=self.Activation(W[l][:,:-1]@Y+W[l][:,-1])
-		return jnp.sum(W[-1][:,:-1]@Y+W[-1][:,-1])
+		WL=ListMatrixize(W)
+		for l in range(len(WL)-1):
+			Y=self.Architecture['Activation'](WL[l][:,:-1]@Y+WL[l][:,-1])
+		return jnp.sum(WL[-1][:,:-1]@Y+WL[-1][:,-1])
 
 
 	def PDE_Default_X(self):
 
 		""" Helper -> Provides PDE Default Argument X """
 
-		return {'Residual_Points': self.Residual_Points, 'Number_Residuals': self.Number_Residuals}
+		return self.Domain['Residual_Points']
 
 
 	@partial(jax.jit,static_argnums=(0))
@@ -47,14 +50,14 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 
 		""" PDE Loss Computation """
 
-		return jnp.sum((self.Source(X['Residual_Points'])-self.Equation(X['Residual_Points'],W))**2)/X['Number_Residuals']
+		return jnp.mean((self.Data['Source'](X)-self.Equation(X,W))**2)
 
 
 	def BC_Default_X(self):
 
-		""" Helper -> Provides PDE Default Argument X """
+		""" Helper -> Provides BC Default Argument X """
 
-		return {'Dirichlet_Lists': self.Dirichlet_Lists,'Dirichlet_Values': self.Dirichlet_Values,'Neumann_Lists': self.Neumann_Lists,'Neumann_Values': self.Neumann_Values,'Periodic_Lower_Points': self.Periodic_Lower_Points,'Periodic_Upper_Points': self.Periodic_Upper_Points,'Number_Boundary_Spots': self.Number_Boundary_Spots}
+		return {'Dirichlet_Lists': self.Data['Dirichlet_Lists'],'Dirichlet_Values': self.Data['Dirichlet_Values'],'Neumann_Lists': self.Data['Neumann_Lists'],'Neumann_Values': self.Data['Neumann_Values'],'Periodic_Lower_Points': self.Data['Periodic_Lower_Points'],'Periodic_Upper_Points': self.Data['Periodic_Upper_Points']}
 
 
 	@partial(jax.jit,static_argnums=(0))
@@ -63,14 +66,18 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 		""" Boundary Conditions Loss Computation """
 
 		Result=0.0
+		Count=0
 		for FacePoints,FaceValues in zip(X['Dirichlet_Lists'],X['Dirichlet_Values']):
 			Result+=jnp.sum((FaceValues-self.Network_Multiple(FacePoints,W))**2)
+			Count+=FacePoints.shape[1]
 		for [FacePoints,FaceIndex],FaceValues in zip(X['Neumann_Lists'],X['Neumann_Values']):
 			FaceGradients=jax.vmap(self.Gradient_Network_Single,in_axes=(1,None),out_axes=1)(FacePoints,W)
-			Result+=jnp.sum((FaceValues-(jax.vmap(jnp.inner,in_axes=(1,None))(FaceGradients,jnp.take(self.Boundary_Normals,FaceIndex,axis=1)))[None,:])**2)
+			Result+=jnp.sum((FaceValues-(jax.vmap(jnp.inner,in_axes=(1,None))(FaceGradients,jnp.take(self.Domain['Boundary_Normals'],FaceIndex,axis=1)))[None,:])**2)
+			Count+=FacePoints.shape[1]
 		for LowerPoints,UpperPoints in zip(X['Periodic_Lower_Points'],X['Periodic_Upper_Points']):
 			Result+=jnp.sum((self.Network_Multiple(LowerPoints,W)-self.Network_Multiple(UpperPoints,W))**2)
-		return Result/X['Number_Boundary_Spots']
+			Count+=LowerPoints.shape[1]
+		return Result/Count
 
 
 	@partial(jax.jit,static_argnums=(0))
@@ -81,7 +88,7 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 		return self.PDE(XR,W)+self.BC(XB,W)
 
 
-	def Plot_1D(self,X,W=None):
+	def Plot_1D(self,X,W=None,S=None):
 
 		""" Plot Network On X
 
@@ -90,14 +97,15 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 			- X -> 1D Array """
 
 		if W is None:
-			W=self.Weights
+			W=self.Architecture['W']
 
-		Figure=plt.figure()
+		if S is not None:
+			plt.plot(X,S(X))
 		plt.plot(X,self.Network_Multiple(X[None,:],W)[0,:])
 		plt.show()
 
 
-	def Plot_2D(self,X,Y,W=None):
+	def Plot_2D(self,X,Y,W=None,S=None):
 
 		""" Plot Network On Meshgrid X x Y
 
@@ -106,20 +114,22 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 			- X,Y -> 1D Arrays """
 
 		if W is None:
-			W=self.Weights
+			W=self.Architecture['W']
 
 		XG,YG=np.meshgrid(X,Y)
-		X_Vals=X[None,:]
-		NX=X_Vals.shape[1]
+		NX=X.shape[0]
+		NY=Y.shape[0]
+		XV=X[None,:]
 		Pts=[]
-		for i in range(YG.shape[0]):
-			Y_Vals=np.array(NX*[YG[i,0]])[None,:]
-			Pts+=[np.concatenate((X_Vals,Y_Vals),axis=0)]
+		for i in range(NY):
+			YV=np.array(NX*[YG[i,0]])[None,:]
+			Pts+=[np.concatenate((XV,YV),axis=0)]
 		Pts=np.concatenate(Pts,axis=1)
-		Net_Values=self.Network_Multiple(Pts,W).reshape(XG.shape)
-		Figure=plt.figure()
-		Ax=plt.axes(projection='3d')
-		Ax.plot_surface(XG,YG,Net_Values)
+		Network_Values=self.Network_Multiple(Pts,W).reshape(XG.shape)
+		Axes=plt.axes(projection='3d')
+		if S is not None:
+			Axes.plot_surface(XG,YG,S(Pts).reshape(XG.shape))
+		Axes.plot_surface(XG,YG,Network_Values)
 		plt.show()
 
 
@@ -127,4 +137,4 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 
 		""" Prints Current Cost Function Value """
 
-		print("Current Cost: %.3e " %(self.Cost(self.Weights,self.PDE_Default_X(),self.BC_Default_X())))
+		print('\nCurrent Cost: %.3e ' %(self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())))

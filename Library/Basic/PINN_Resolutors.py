@@ -6,20 +6,20 @@ from Basic.PINN_Problems import *
 P=TemplateParameter('P')
 
 
-class Resolutor_ADAM_BFGS_Basic(P,metaclass=Template[P]):
+class Resolutor_Basic(P,metaclass=Template[P]):
 
 	""" Resolutor Of Differential Problem P Upon Basic PINN
 
 		Optimizers:
 		- ADAM -> First Order
-		- BFGS -> Super-Linear Order """
+		- L-BFGS -> Super-Linear Order """
 
 
-	ADAM_Default={'Alpha': 1e-3,'Beta': 0.9,'Gamma': 0.999,'Delta': 1e-7}
-	BFGS_Default={'GradTol': 1e-6,'AlphaZero': 10.0,'C': 0.5,'Tau': 0.5,'StillTol': 10,'AlphaTol': 1e-10,'Eps': 1e-12}
+	ADAM_Default={'Alpha': 1e-3,'Beta': 0.9,'Gamma': 0.999,'Delta': 1e-8}
+	LBFGS_Default={'Memory': 10,'GradTol': 1e-6,'AlphaTol': 1e-6,'StillTol': 10,'AlphaZero': 10.0,'C': 0.5,'T': 0.5,'Eps': 1e-8}
 
 
-	def ADAM(self,Epochs,Batch,Parameters=None):
+	def ADAM(self,Epochs,Batch_Fraction,Parameters=None):
 
 		""" ADAM Optimization Method """
 
@@ -29,115 +29,141 @@ class Resolutor_ADAM_BFGS_Basic(P,metaclass=Template[P]):
 			[a,b,c,d]=[Parameters['Alpha'],Parameters['Beta'],Parameters['Gamma'],Parameters['Delta']]
 
 		np.random.seed(Random_Seed())
-		Hist=[self.Cost(self.Weights,self.PDE_Default_X(),self.BC_Default_X())]
-		L=len(self.Weights)
-		m=[np.zeros_like(w) for w in self.Weights]
-		v=[np.zeros_like(w) for w in self.Weights]
-		XR={'Residual_Points': self.Residual_Points,'Number_Residuals': Batch}
+		Cost_Hist=[self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())]
+		m=np.zeros_like(self.Architecture['W'])
+		v=np.zeros_like(m)
+		print('ADAM: (0/%d)' %(Epochs),end='\r')
 		for i in range(Epochs):
-			IdxsR=np.random.choice(self.Number_Residuals,Batch)
-			XR['Residual_Points']=self.Residual_Points[:,IdxsR]
-			g=self.Gradient_Cost(self.Weights,XR,self.BC_Default_X())
-			for l in range(L):
-				m[l]=(b*m[l]+(1-b)*g[l])
-				v[l]=(c*v[l]+(1-c)*g[l]*g[l])
-				self.Weights[l]-=(a*(m[l]/(1-b**(i+1))))/(np.sqrt(v[l]/(1-c**(i+1)))+d)
-			Hist+=[self.Cost(self.Weights,self.PDE_Default_X(),self.BC_Default_X())]
-		return Hist
+			Res_Batch=int(np.ceil(Batch_Fraction*self.Domain['Number_Residuals']))
+			IdxsR=np.random.choice(self.Domain['Number_Residuals'],Res_Batch)
+			g=self.Gradient_Cost(self.Architecture['W'],self.Domain['Residual_Points'][:,IdxsR],self.BC_Default_X())
+			m=b*m+(1-b)*g
+			v=c*v+(1-c)*(g**2)
+			self.Architecture['W']-=(a*(m/(1-b**(i+1))))/(np.sqrt(v/(1-c**(i+1)))+d)
+			print('ADAM: (%d/%d)' %(i+1,Epochs),end='\r')
+			Cost_Hist+=[self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())]
+		return Cost_Hist
 
 
-	def BFGS(self,MaxEpochs,Parameters=None):
+	def Line_Search(self,W,D,M,C,T,Cost_Pre,Alpha_Pre,AlphaZero,Eps):
 
-		""" BFGS Optimization Method """
+		""" Two-Way Backtracking Line Search Algorithm For LBFGS """
+
+		Alpha=Alpha_Pre
+		Z=-C*M
+		Cost_Post=self.Cost(W+Alpha*D,self.PDE_Default_X(),self.BC_Default_X())
+		if ((Cost_Pre-Cost_Post)>=np.abs(Alpha*Z)):
+			while ((Cost_Pre-Cost_Post)>=np.abs(Alpha*Z) and (Alpha<=AlphaZero)):
+				Alpha/=T
+				Cost_Post=self.Cost(W+Alpha*D,self.PDE_Default_X(),self.BC_Default_X())
+			Alpha*=T
+		else:
+			while ((Cost_Pre-Cost_Post)<(np.abs(Alpha*Z)-Eps)):
+				Alpha*=T
+				Cost_Post=self.Cost(W+Alpha*D,self.PDE_Default_X(),self.BC_Default_X())
+		return Alpha
+
+
+	@partial(jax.jit,static_argnums=(0))
+	def Two_Loops_Recursion(self,Grad,Mem_DeltaW,Mem_DeltaGrad,Mem_Ro):
+
+		""" Two-Loop Recursion Algorithm For LBFGS """
+
+		M=len(Mem_DeltaW)
+		C=jnp.inner(Mem_DeltaW[0],Mem_DeltaGrad[0])/jnp.inner(Mem_DeltaGrad[0],Mem_DeltaGrad[0])
+		A=M*[0]
+		D=-Grad
+		for i in range(M):
+			A[i]=jnp.inner(Mem_DeltaW[i],D)/Mem_Ro[i]
+			D-=A[i]*Mem_DeltaGrad[i]
+		D*=C
+		for i in reversed(range(M)):
+			B=jnp.inner(Mem_DeltaGrad[i],D)/Mem_Ro[i]
+			D+=Mem_DeltaW[i]*(A[i]-B)
+		return D
+
+
+	@partial(jax.jit,static_argnums=(0))
+	def Update_B(self,B,S,Y,I,Denominator):
+
+		""" Helper To Update Inverse Hessian Approximation For BFGS """
+
+		M1=-(S[:,None])@(Y[None,:])/Denominator
+		M2=(S[:,None])@(S[None,:])/Denominator
+		New_B=I+M1
+		New_B=(New_B)@(B)
+		New_B=(New_B)@(I+M1.T)
+		New_B+=M2
+		return New_B
+
+
+	def LBFGS(self,MaxEpochs,Parameters=None):
+
+		""" L-BFGS Optimization Method
+
+			Procedure:
+			- First Iterations To Initialize Memory Vectors -> BFGS
+			- Remaining Iterations -> L-BFGS """
+
+		LBFGS_Default={'Memory': 10,'GradTol': 1e-6,'AlphaTol': 1e-6,'StillTol': 10,'AlphaZero': 10.0,'C': 0.5,'T': 0.5,'Eps': 1e-8}
 
 		if Parameters is None:
-			[GradTol,AlphaZero,C,Tau,StillTol,AlphaTol,Eps]=[self.BFGS_Default['GradTol'],self.BFGS_Default['AlphaZero'],self.BFGS_Default['C'],self.BFGS_Default['Tau'],self.BFGS_Default['StillTol'],self.BFGS_Default['AlphaTol'],self.BFGS_Default['Eps']]
+			[Memory,GradTol,AlphaTol,StillTol,AlphaZero,C,T,Eps]=[self.LBFGS_Default['Memory'],self.LBFGS_Default['GradTol'],self.LBFGS_Default['AlphaTol'],self.LBFGS_Default['StillTol'],self.LBFGS_Default['AlphaZero'],self.LBFGS_Default['C'],self.LBFGS_Default['T'],self.LBFGS_Default['Eps']]
 		else:
-			[GradTol,AlphaZero,C,Tau,StillTol,AlphaTol,Eps]=[Parameters['GradTol'],Parameters['AlphaZero'],Parameters['C'],Parameters['Tau'],Parameters['StillTol'],Parameters['AlphaTol'],Parameters['Eps']]
+			[Memory,GradTol,AlphaTol,StillTol,AlphaZero,C,T,Eps]=[Parameters['Memory'],Parameters['GradTol'],Parameters['AlphaTol'],Parameters['StillTol'],Parameters['AlphaZero'],Parameters['C'],Parameters['T'],Parameters['Eps']]
 
-		@jax.jit
-		def Cost_BFGS(W,Alpha,D):
-
-			""" Helper Cost For BFGS """
-
-			WM=ListMatrixize(W+Alpha*D)
-			return self.PDE(self.PDE_Default_X(),WM)+self.BC(self.BC_Default_X(),WM)
-
-		Grad_Cost_BFGS=jax.jit(jax.grad(Cost_BFGS))
-
-		def Line_Search(W,Alpha_Pre,D,M,Cost_Pre):
-
-			""" Two-Way Backtracking Line Search Algorithm """
-
-			A=Alpha_Pre
-			T=-C*M
-			Cost_Post=Cost_BFGS(W,A,D)
-			if ((Cost_Pre-Cost_Post)>=np.abs(A*T)):
-				while ((Cost_Pre-Cost_Post)>=np.abs(A*T) and (A<=AlphaZero)):
-					A/=Tau
-					Cost_Post=Cost_BFGS(W,A,D)
-				A*=Tau
-			else:
-				while ((Cost_Pre-Cost_Post)<(np.abs(A*T)-Eps)):
-					A*=Tau
-					Cost_Post=Cost_BFGS(W,A,D)
-			return A
-
-		@jax.jit
-		def Update_B(B,S,Y,I,Denominator):
-
-			""" Helper To Update B (Inverse Hessian Approximation) """
-
-			M1=-(S[:,None])@(Y[None,:])/Denominator
-			M2=(S[:,None])@(S[None,:])/Denominator
-			New_B=I+M1
-			New_B=(New_B)@(B)
-			New_B=(New_B)@(I+M1.T)
-			New_B+=M2
-			return New_B
-
-		W=Flatten_And_Update(self.Weights)
-		N=W.shape[0]
-		Z=np.zeros_like(W)
+		N=self.Architecture['W'].shape[0]
+		Memory_DeltaW=Cyclic_Deque(Memory,np.zeros(N))
+		Memory_DeltaGrad=Cyclic_Deque(Memory,np.zeros(N))
+		Memory_Ro=Cyclic_Deque(Memory,0)
 		I=np.eye(N)
 		B=np.copy(I)
-		Cost_Pre=Cost_BFGS(W,0.0,Z)
-		Grad_Pre=Grad_Cost_BFGS(W,0.0,Z)
-		Alpha=AlphaZero
+		Cost_Pre=self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
+		Grad_Pre=self.Gradient_Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
+		Cost_Hist=[Cost_Pre]
 		Consecutive_Still=0
-		Iters=0
-		Hist=[Cost_Pre]
-		while (not(jnp.linalg.norm(Grad_Pre)<GradTol) and not(Cost_Pre<EpsMachine) and (Iters<MaxEpochs) and (Consecutive_Still<StillTol)):
-			Direction=-(B)@(Grad_Pre)
-			Alpha=Line_Search(W,Alpha,Direction,jnp.inner(Grad_Pre,Direction),Cost_Pre)
-			S=Alpha*Direction
-			W+=S
-			Cost_Post=Cost_BFGS(W,0.0,Z)
-			Grad_Post=Grad_Cost_BFGS(W,0.0,Z)
-			Y=Grad_Post-Grad_Pre
-			Denominator=jnp.inner(S,Y)
-			B=Update_B(B,S,Y,I,Denominator)
-			Hist+=[Cost_Post]
-			if (not(jnp.all(jnp.isfinite(B)))):
-				break
-			if (np.abs(Alpha)<AlphaTol):
-				Consecutive_Still+=1
-			else:
-				Consecutive_Still=0
-			Cost_Pre=Cost_Post
-			Grad_Pre=np.copy(Grad_Post)
-			Iters+=1
-		self.Weights=ListMatrixize(W)
-		return Hist
+		Alpha=AlphaZero
+		Iteration=0
+		Methods=['BFGS','L-BFGS']
+		for Method in Methods:
+			print('\n'+Method+': (%d/%d)' %(Iteration,max(Memory,MaxEpochs*(Method=='L-BFGS'))),end='\r')
+			while (not(jnp.linalg.norm(Grad_Pre)<GradTol) and not(Cost_Pre<EpsMachine) and (Iteration<max(Memory,(Method=='L-BFGS')*MaxEpochs)) and (Consecutive_Still<StillTol)):
+				if (Method=='BFGS'):
+					Direction=-(B)@(Grad_Pre)
+				elif (Method=='L-BFGS'):
+					Direction=self.Two_Loops_Recursion(Grad_Pre,Memory_DeltaW.List(),Memory_DeltaGrad.List(),Memory_Ro.List())
+				if (not(jnp.all(jnp.isfinite(Direction)))):
+					print('Invalid Search Direction Encountered')
+					break
+				Alpha=self.Line_Search(self.Architecture['W'],Direction,jnp.inner(Grad_Pre,Direction),C,T,Cost_Pre,Alpha,AlphaZero,Eps)
+				S=Alpha*Direction
+				self.Architecture['W']+=S
+				Cost_Post=self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
+				Grad_Post=self.Gradient_Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
+				Y=Grad_Post-Grad_Pre
+				Denominator=jnp.inner(S,Y)
+				Memory_DeltaW.Insert(S)
+				Memory_DeltaGrad.Insert(Y)
+				Memory_Ro.Insert(Denominator)
+				Cost_Hist+=[Cost_Post]
+				Cost_Pre=Cost_Post
+				Grad_Pre=np.copy(Grad_Post)
+				Iteration+=1
+				if (np.abs(Alpha)<AlphaTol):
+					Consecutive_Still+=1
+				else:
+					Consecutive_Still=0
+				if (Method=='BFGS'):
+					if (Iteration<Memory):
+						B=self.Update_B(B,S,Y,I,Denominator)
+					else:
+						del I,B
+				print(Method+': (%d/%d)' %(Iteration,max(Memory,MaxEpochs*(Method=='L-BFGS'))),end='\r')
+		return Cost_Hist
 
 
-	def Learn(self,ADAM_Steps,ADAM_Batch,BFGS_MaxSteps,ADAM_Params=None,BFGS_Params=None):
+	def Learn(self,ADAM_Steps,ADAM_BatchFraction,LBFGS_MaxSteps,ADAM_Params=None,LBFGS_Params=None):
 
 		""" Learning Execution """
 
-		Tot_Hist=[]
-		print("ADAM Progressing ... ")
-		Tot_Hist+=self.ADAM(ADAM_Steps,ADAM_Batch,ADAM_Params)[:-1]
-		print("BFGS Progressing ... ")
-		Tot_Hist+=self.BFGS(BFGS_MaxSteps,BFGS_Params)
-		return Tot_Hist
+		return self.ADAM(ADAM_Steps,ADAM_BatchFraction,ADAM_Params)[:-1]+self.LBFGS(LBFGS_MaxSteps,LBFGS_Params)

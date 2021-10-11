@@ -8,82 +8,79 @@ from Basic.PINN_Resolutors import *
 	Problem: Scalar 1D Poisson With Homogeneous Dirichlet Conditions In Domain [-1,1]
 
 	Launch To Create PINNs To Approximate:
-	- Very Low Frequency Solution (F_VeryLow: Corresponding Source Term)
-	- Low Frequency Solution (F_Low: Corresponding Source Term)
-	- Medium Frequency Solution (F_Medium: Corresponding Source Term)
-	- High Frequency Solution (F_High: Corresponding Source Term)
-	- Very High Frequency Solution (F_VeryHigh: Corresponding Source Term)
+	- [VeryLow, Low, Medium, High, VeryHigh] Frequency Solutions
 
-	Trial Activation Functions:
+	Trial Activation Function:
 	- Tanh (Hyperbolic Tangent)
-	- ReLU (Rectified Linear Unit)
 
 	Trial Architecture Parameters:
 	- Hidden_Layers -> [1,2,3]
-	- Neurons_Per_Layer -> [15,30,50]
+	- Neurons_Per_Layer -> [10,20,40]
 
-	Three Models Trained With ADAM-BFGS (10000 ADAM Steps, 10000 Maximum BFGS Steps [Both Default Settings]) For Each Combination -> [Residuals-Frequency-Architecture-Activation]
+	Trial Uniform Residuals:
+	- [25,250,2500]
+
+	Three Models Trained With [ADAM,L-BFGS] (10000 ADAM Steps, 20000 Maximum L-BFGS Steps [Both Default Settings & Full Batch]) For Each Combination -> [Residuals-Frequency-Architecture-Activation]
 	Each Model -> Saved In Proper Folder As Dictionary Containing:
-	- Final Weights
-	- Final Relative L2 Error
-	- Batch Size
-	- Elapsed Learning Time
 	- History Cost Function
-	- Error Discrete Fourier Transform Vector & Frequencies
-	- Solution String
-	- Network & Solution Evaluations (Made On Default Uniform Linspacing) """
+	- Final Relative L2 Error
+	- Elapsed Learning Time
+	- Error Discrete Fourier Transform
+	- Network & Solution Evaluations
+	- Solution String """
 
 
 def F_VeryLow(X):
-	return ((-0.25*jnp.pi**2)*jnp.cos(0.5*jnp.pi*X))
+	return ((-1*jnp.pi**2)*jnp.sin(1*jnp.pi*X))
 def Sol_VeryLow(X):
-	return (jnp.cos(0.5*jnp.pi*X))
-String_VeryLow='cos(0.5*pi*x)'
+	return (jnp.sin(1*jnp.pi*X))
+String_VeryLow='sin(1*pi*x)'
 
 def F_Low(X):
-	return ((-jnp.pi**2)*jnp.sin(jnp.pi*X))
+	return ((-25*jnp.pi**2)*jnp.sin(5*jnp.pi*X))
 def Sol_Low(X):
-	return (jnp.sin(jnp.pi*X))
-String_Low='sin(pi*x)'
+	return (jnp.sin(5*jnp.pi*X))
+String_Low='sin(5*pi*x)'
 
 def F_Medium(X):
-	return (-25*jnp.pi**2)*jnp.sin(5*jnp.pi*X)
+	return (-100*jnp.pi**2)*jnp.sin(10*jnp.pi*X)
 def Sol_Medium(X):
-	return (jnp.sin(5*jnp.pi*X))
-String_Medium='sin(5*pi*x)'
+	return (jnp.sin(10*jnp.pi*X))
+String_Medium='sin(10*pi*x)'
 
 def F_High(X):
-	return (-100*jnp.pi**2)*jnp.sin(10*jnp.pi*X)
+	return (-225*jnp.pi**2)*jnp.sin(15*jnp.pi*X)
 def Sol_High(X):
-	return (jnp.sin(10*jnp.pi*X))
-String_High='sin(10*pi*x)'
+	return (jnp.sin(15*jnp.pi*X))
+String_High='sin(15*pi*x)'
 
 def F_VeryHigh(X):
-	return (-225*jnp.pi**2)*jnp.sin(15*jnp.pi*X)
+	return (-625*jnp.pi**2)*jnp.sin(25*jnp.pi*X)
 def Sol_VeryHigh(X):
-	return (jnp.sin(15*jnp.pi*X))
-String_VeryHigh='sin(15*pi*x)'
+	return (jnp.sin(25*jnp.pi*X))
+String_VeryHigh='sin(25*pi*x)'
 
 def G(X):
 	return jnp.zeros_like(X)
 
 Test=1
 NAttempts=3
-Number_Residuals=[25,200]
-ADAM_Batch=[25,200]
+Number_Residuals=[25,250,2500]
+ADAM_BatchFraction=[1.0,1.0,1.0]
 ADAM_Steps=10000
-BFGS_MaxSteps=10000
-Domain=np.array([[-1.0,1.0]])
-Points=np.linspace(-1.0,1.0,2001)
+LBFGS_MaxSteps=20000
+Limits=np.array([[-1.0,1.0]])
+Points=np.linspace(-1.0,1.0,20001)
 Dx=Points[1]-Points[0]
 Number_Boundary_Points=[[1,1]]
 Boundary_Labels=2*['Dirichlet']
 Hidden_Layers=[1,2,3]
-Neurons_Per_Layer=[15,30,50]
-Activations={'Tanh': jnp.tanh,'ReLU': jax.nn.relu}
+Neurons_Per_Layer=[10,20,40]
+Initialization='Uniform'
+Activations={'Tanh': jnp.tanh}
 Sources={'VeryLow': F_VeryLow,'Low': F_Low,'Medium': F_Medium,'High': F_High,'VeryHigh': F_VeryHigh}
-Solutions={'VeryLow': Sol_VeryLow,'Low': Sol_Low,'Medium': Sol_Medium,'High': Sol_High,'VeryHigh': Sol_VeryHigh}
-Strings={'VeryLow': String_VeryLow,'Low': String_Low,'Medium': String_Medium,'High': String_High,'VeryHigh': String_VeryHigh}
+Solution={'VeryLow': Sol_VeryLow,'Low': Sol_Low,'Medium': Sol_Medium,'High': Sol_High,'VeryHigh': Sol_VeryHigh}
+String={'VeryLow': String_VeryLow,'Low': String_Low,'Medium': String_Medium,'High': String_High,'VeryHigh': String_VeryHigh}
 
 
 for c,NR in enumerate(Number_Residuals):
@@ -92,24 +89,23 @@ for c,NR in enumerate(Number_Residuals):
 			for NPL in Neurons_Per_Layer:
 				for Frequency,SRC in Sources.items():
 					for i in range(NAttempts):
-						Solver=Resolutor_ADAM_BFGS_Basic[Poisson_Scalar_Basic](1,HL,NPL,Sigma,Domain,NR,Number_Boundary_Points,Boundary_Labels,SRC,G,G)
+						Architecture={'Input_Dimension': 1,'Hidden_Layers': HL,'Neurons_Per_Layer': HL*[NPL],'Activation': Sigma,'Initialization': Initialization}
+						Domain={'Dimension': 1,'Limits': Limits,'Number_Residuals': NR,'Number_Boundary_Points': Number_Boundary_Points,'Boundary_Labels': Boundary_Labels}
+						Data={'Source': SRC,'Exact_Dirichlet': G,'Exact_Neumann': G}
+						Solver=Resolutor_Basic[Poisson_Scalar_Basic](Architecture,Domain,Data)
 						Start=time.perf_counter()
-						History=Solver.Learn(ADAM_Steps,ADAM_Batch[c],BFGS_MaxSteps)
+						History=Solver.Learn(ADAM_Steps,ADAM_BatchFraction[c],LBFGS_MaxSteps)
 						End=time.perf_counter()
 						Elapsed=End-Start
-						W=copy.deepcopy(Solver.Weights)
-						Network_Eval=Solver.Network_Multiple(Points[None,:],W)[0,:]
-						Solution=Solutions[Frequency]
-						Solution_Eval=Solution(Points)
+						Network_Eval=Solver.Network_Multiple(Points[None,:],Solver.Architecture['W'])[0,:]
+						Solution_Eval=Solution[Frequency](Points)
 						Error=Solution_Eval-Network_Eval
 						Relative_L2_Error=np.linalg.norm(Error)/np.linalg.norm(Solution_Eval)
-						[DFT_Error,Freqs]=[np.fft.fft(Error),np.fft.fftfreq(len(Error),d=Dx)]
-						[DFT_Error,Freqs]=[np.fft.fftshift(DFT_Error),np.fft.fftshift(Freqs)]
-						Dictionary={'W': W,'Time': Elapsed,'History': History,'Relative_L2_Error': Relative_L2_Error,'DFT_Error': DFT_Error,'Freqs_DFT': Freqs,
-									'Solution': Strings[Frequency],'Network_Eval': Network_Eval,'Solution_Eval': Solution_Eval,'Batch_Size': ADAM_Batch[c]}
+						[DFT_Error,Freqs]=[np.fft.fftshift(np.fft.fft(Error)),np.fft.fftshift(np.fft.fftfreq(len(Error),d=Dx))]
+						Dictionary={'Time': Elapsed,'History': History,'Relative_L2_Error': Relative_L2_Error,'DFT_Error': DFT_Error,'DFT_Freqs': Freqs,'Solution': String[Frequency],'Network_Eval': Network_Eval,'Solution_Eval': Solution_Eval}
 						Name='Models_'+SigmaName+'/'+'Test_'+str(Test)+'/'+'Model_'+Frequency+'_'+str(HL)+'HL_'+str(NPL)+'NPL_'+str(NR)+'NR_'+str(i+1)
 						File=open(Name,'wb')
 						dill.dump(Dictionary,File)
 						File.close()
 						Solver.Print_Cost()
-						print("Model Saved Successfully")
+						print('Model Saved Successfully')
