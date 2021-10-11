@@ -174,7 +174,7 @@ def Flatten_SetGlobals(ArrayList):
 		Rows[l]=s[0]
 		Cum[l+1]=s[0]*s[1]+Cum[l]
 		ArrayFlat+=[np.ravel(ArrayList[l])]
-	return np.asarray(np.concatenate(ArrayFlat,axis=0)),Globals({'Rows': Rows,'Cum': Cum})
+	return np.asarray(np.concatenate(ArrayFlat,axis=0)),Rows,Cum
 
 
 @jax.jit
