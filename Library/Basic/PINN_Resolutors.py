@@ -29,7 +29,7 @@ class Resolutor_Basic(P,metaclass=Template[P]):
 			[a,b,c,d]=[Parameters['Alpha'],Parameters['Beta'],Parameters['Gamma'],Parameters['Delta']]
 
 		np.random.seed(Random_Seed())
-		Cost_Hist=[self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())]
+		Cost_Hist=[self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X()).item()]
 		m=np.zeros_like(self.Architecture['W'])
 		v=np.zeros_like(m)
 		print('ADAM: (0/%d)' %(Epochs),end='\r')
@@ -41,7 +41,7 @@ class Resolutor_Basic(P,metaclass=Template[P]):
 			v=c*v+(1-c)*(g**2)
 			self.Architecture['W']-=(a*(m/(1-b**(i+1))))/(np.sqrt(v/(1-c**(i+1)))+d)
 			print('ADAM: (%d/%d)' %(i+1,Epochs),end='\r')
-			Cost_Hist+=[self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())]
+			Cost_Hist+=[self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X()).item()]
 		return Cost_Hist
 
 
@@ -120,7 +120,7 @@ class Resolutor_Basic(P,metaclass=Template[P]):
 		B=np.copy(I)
 		Cost_Pre=self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
 		Grad_Pre=self.Gradient_Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
-		Cost_Hist=[Cost_Pre]
+		Cost_Hist=[Cost_Pre.item()]
 		Consecutive_Still=0
 		Alpha=AlphaZero
 		Iteration=0
@@ -145,7 +145,7 @@ class Resolutor_Basic(P,metaclass=Template[P]):
 				Memory_DeltaW.Insert(S)
 				Memory_DeltaGrad.Insert(Y)
 				Memory_Ro.Insert(Denominator)
-				Cost_Hist+=[Cost_Post]
+				Cost_Hist+=[Cost_Post.item()]
 				Cost_Pre=Cost_Post
 				Grad_Pre=np.copy(Grad_Post)
 				Iteration+=1
