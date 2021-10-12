@@ -133,7 +133,7 @@ class Resolutor_Basic(P,metaclass=Template[P]):
 				elif (Method=='L-BFGS'):
 					Direction=self.Two_Loops_Recursion(Grad_Pre,Memory_DeltaW.List(),Memory_DeltaGrad.List(),Memory_Ro.List())
 				if (not(jnp.all(jnp.isfinite(Direction)))):
-					print('Invalid Search Direction Encountered')
+					print('\nInvalid Search Direction Encountered')
 					break
 				Alpha=self.Line_Search(self.Architecture['W'],Direction,jnp.inner(Grad_Pre,Direction),C,T,Cost_Pre,Alpha,AlphaZero,Eps)
 				S=Alpha*Direction
