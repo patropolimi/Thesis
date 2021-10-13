@@ -18,7 +18,7 @@ Activations=['Tanh']
 for SigmaName in Activations:
 	for i in range(NAttempts):
 		for j in range(len(Number_Residuals)):
-			Name='Models_'+SigmaName+'/'+'Test_'+str(Test)+'/'+'Model_Multi_'+str(Number_Residuals[j])+'NR'+str(i+1)
+			Name='Models_'+SigmaName+'/'+'Test_'+str(Test)+'/'+'Model_Multi_'+str(Number_Residuals[j])+'NR_'+str(i+1)
 			File=open(Name,'rb')
 			Model=dill.load(File)
 			Relative_L2_Error[i,j]=Model['Relative_L2_Error']

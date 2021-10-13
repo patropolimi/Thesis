@@ -16,9 +16,9 @@ from Basic.PINN_Resolutors import *
 
 Test=1
 NAttempts=3
-Number_Residuals=[25,250,2500]
-Hidden_Layers=[1,2,3]
-Neurons_Per_Layer=[10,20,40]
+Number_Residuals=[250,2500]
+Hidden_Layers=[1,2]
+Neurons_Per_Layer=[40,80]
 Activations=['Tanh']
 Table_Modes={'Average': jnp.mean,'Best': jnp.min}
 

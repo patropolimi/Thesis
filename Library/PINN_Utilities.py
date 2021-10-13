@@ -53,14 +53,14 @@ def Glorot_Normal(Input_Dimension,Output_Dimension,Hidden_Layers,Neurons_Per_Lay
 	return Weights
 
 
-def Sample_Interior(Domain,N):
+def Sample_Interior(Limits,N):
 
 	""" Uniform Sampling (N Spots) Of Hyper-Rectangular Domain Interior """
 
-	return sm.LHS(xlimits=Domain)(N).T
+	return sm.LHS(xlimits=Limits)(N).T
 
 
-def Sample_Boundary(Domain,N):
+def Sample_Boundary(Limits,N):
 
 	""" Uniform Sampling Of Hyper-Rectangular Domain Boundary
 
@@ -77,25 +77,25 @@ def Sample_Boundary(Domain,N):
 	Number_Boundary_Spots=0
 	if (Dim==1):
 		if (N[0][0]):
-			Boundary_Points+=[np.array([[Domain[0,0]]])]
+			Boundary_Points+=[np.array([[Limits[0,0]]])]
 		else:
 			Boundary_Points+=[np.array([[]])]
 		if (N[0][1]):
-			Boundary_Points+=[np.array([[Domain[0,1]]])]
+			Boundary_Points+=[np.array([[Limits[0,1]]])]
 		else:
 			Boundary_Points+=[np.array([[]])]
 		Number_Boundary_Spots+=N[0][0]+N[0][1]
 	else:
 		for d in range(Dim):
-			Sampling=sm.LHS(xlimits=np.concatenate((Domain[:d,:],Domain[d+1:,:]),axis=0))
+			Sampling=sm.LHS(xlimits=np.concatenate((Limits[:d,:],Limits[d+1:,:]),axis=0))
 			if (N[d][0]):
 				Samples_LB=Sampling(N[d][0])
-				Boundary_Points.append(np.concatenate((Samples_LB[:,:d],Domain[d,0]*np.ones((N[d][0],1)),Samples_LB[:,d:]),axis=1).T)
+				Boundary_Points.append(np.concatenate((Samples_LB[:,:d],Limits[d,0]*np.ones((N[d][0],1)),Samples_LB[:,d:]),axis=1).T)
 			else:
 				Boundary_Points.append(np.array([[]]))
 			if (N[d][1]):
 				Samples_UB=Sampling(N[d][1])
-				Boundary_Points.append(np.concatenate((Samples_UB[:,:d],Domain[d,1]*np.ones((N[d][1],1)),Samples_UB[:,d:]),axis=1).T)
+				Boundary_Points.append(np.concatenate((Samples_UB[:,:d],Limits[d,1]*np.ones((N[d][1],1)),Samples_UB[:,d:]),axis=1).T)
 			else:
 				Boundary_Points.append(np.array([[]]))
 			Number_Boundary_Spots+=N[d][0]+N[d][1]

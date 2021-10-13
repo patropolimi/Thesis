@@ -16,7 +16,7 @@ def main():
 		Continue=int(input('Choose:\n0: Leave\n1: Inspect\n'))
 		if (Continue):
 			Act=str(input('Activation: '))
-			T=str(input('Test Number: '))
+			T=str(input('Test: '))
 			NR=str(input('Number Residuals: '))
 			I=str(input('Instance: '))
 			Name='Models_'+Act+'/'+'Test_'+T+'/'+'Model_'+NR+'NR_'+I

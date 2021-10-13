@@ -5,6 +5,8 @@ from Basic.PINN_Resolutors import *
 
 """ Launch Script [To Be Launched Once For Each Test] [To Be Tuned By Hand For Every Launch] -> Basic PINN Sensitivity Analysis (Multi-Scale)
 
+	Carried Basing On Results -> Basic PINN Sensitivity Analysis (Single-Scale)
+
 	Problem: Scalar 1D Poisson With Homogeneous Dirichlet Conditions In Domain [-1,1]
 
 	Launch To Create PINNs To Approximate:
@@ -14,13 +16,13 @@ from Basic.PINN_Resolutors import *
 	- Tanh (Hyperbolic Tangent)
 
 	Trial Architecture Parameters:
-	- Hidden_Layers -> [1,2,3]
-	- Neurons_Per_Layer -> [10,20,40]
+	- Hidden_Layers -> [1,2]
+	- Neurons_Per_Layer -> [40,80]
 
 	Trial Uniform Residuals:
-	- [25,250,2500]
+	- [250,2500]
 
-	Three Models Trained With [ADAM,L-BFGS] (10000 ADAM Steps, 20000 Maximum L-BFGS Steps [Both Default Settings & Full Batch]) For Each Combination -> [Residuals-Architecture-Activation]
+	Three Models Trained With [ADAM,L-BFGS] (10000 ADAM Steps (Default Settings), 50000 Maximum L-BFGS Steps (Default Settings Except Memory -> 100) [Both Full Batch]) For Each Combination -> [Residuals-Architecture-Activation]
 	Each Model -> Saved In Proper Folder As Dictionary Containing:
 	- History Cost Function
 	- Final Relative L2 Error
@@ -30,7 +32,7 @@ from Basic.PINN_Resolutors import *
 	- Solution String """
 
 
-Coeffs={'VeryLow': 5,'Low': 1,'Medium': 1/2,'High': 1/3,'VeryHigh': 1/5}
+Coeffs={'VeryLow': 15,'Low': 3,'Medium': 3/2,'High': 1,'VeryHigh': 3/5}
 
 def F_VeryLow(X):
 	return ((-1*jnp.pi**2)*jnp.sin(1*jnp.pi*X))
@@ -73,19 +75,21 @@ def G(X):
 
 Test=1
 NAttempts=3
-Number_Residuals=[25,250,2500]
-ADAM_BatchFraction=[1.0,1.0,1.0]
+Number_Residuals=[250,2500]
+ADAM_BatchFraction=[1.0,1.0]
 ADAM_Steps=10000
-LBFGS_MaxSteps=20000
+LBFGS_MaxSteps=50000
 Limits=np.array([[-1.0,1.0]])
 Points=np.linspace(-1.0,1.0,20001)
 Dx=Points[1]-Points[0]
 Number_Boundary_Points=[[1,1]]
 Boundary_Labels=2*['Dirichlet']
-Hidden_Layers=[1,2,3]
-Neurons_Per_Layer=[10,20,40]
+Hidden_Layers=[1,2]
+Neurons_Per_Layer=[40,80]
 Initialization='Uniform'
 Activations={'Tanh': jnp.tanh}
+ADAM_Parameters=None
+LBFGS_Parameters={'Memory': 100,'GradTol': 1e-6,'AlphaTol': 1e-6,'StillTol': 10,'AlphaZero': 10.0,'C': 0.5,'T': 0.5,'Eps': 1e-8}
 
 
 for c,NR in enumerate(Number_Residuals):
@@ -98,7 +102,7 @@ for c,NR in enumerate(Number_Residuals):
 						Data={'Source': F_Multi,'Exact_Dirichlet': G,'Exact_Neumann': G}
 						Solver=Resolutor_Basic[Poisson_Scalar_Basic](Architecture,Domain,Data)
 						Start=time.perf_counter()
-						History=Solver.Learn(ADAM_Steps,ADAM_BatchFraction[c],LBFGS_MaxSteps)
+						History=Solver.Learn(ADAM_Steps,ADAM_BatchFraction[c],LBFGS_MaxSteps,ADAM_Params=ADAM_Parameters,LBFGS_Params=LBFGS_Parameters)
 						End=time.perf_counter()
 						Elapsed=End-Start
 						Network_Eval=Solver.Network_Multiple(Points[None,:],Solver.Architecture['W'])[0,:]

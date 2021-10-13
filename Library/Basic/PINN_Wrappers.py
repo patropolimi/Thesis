@@ -13,9 +13,6 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 		PINN_Basic.__init__(self,Architecture)
 		Geometry_HyperRectangular.__init__(self,Domain)
 		self.Data=Data
-		self.Data['Source']=jax.jit(Data['Source'])
-		self.Data['Exact_Dirichlet']=jax.jit(Data['Exact_Dirichlet'])
-		self.Data['Exact_Neumann']=jax.jit(Data['Exact_Neumann'])
 		self.Data['Dirichlet_Lists'],self.Data['Dirichlet_Values'],self.Data['Neumann_Lists'],self.Data['Neumann_Values'],self.Data['Periodic_Lists'],self.Data['Periodic_Lower_Points'],self.Data['Periodic_Upper_Points']=Set_Boundary_Points_And_Values(self.Domain['Boundary_Lists'],Domain['Boundary_Labels'],Data['Exact_Dirichlet'],Data['Exact_Neumann'])
 		self.Gradient_Network_Single=jax.jit(jax.grad(self.Network_Single))
 		self.Hessian_Network_Single=jax.jit(jax.jacobian(self.Gradient_Network_Single))
