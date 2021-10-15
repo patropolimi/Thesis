@@ -22,12 +22,14 @@ ADAM_BatchFraction=[1.0]
 ADAM_Steps=10000
 LBFGS_MaxSteps=30000
 Limits=np.array([[-1.0,1.0],[-1.0,1.0]])
-N_1D=2001
-Points_1D=np.linspace(-1.0,1.0,N_1D)
-XV=Points_1D[None,:]
+NX=2001
+NY=2001
+PX=np.linspace(-1.0,1.0,NX)
+PY=np.linspace(-1.0,1.0,NY)
+XV=PX[None,:]
 Points_2D=[]
-for i in range(N_1D):
-	YV=np.array(N_1D*[Points_1D[i]])[None,:]
+for i in range(NY):
+	YV=np.array(NX*[PY[i]])[None,:]
 	Points_2D+=[np.concatenate((XV,YV),axis=0)]
 Points_2D=np.concatenate(Points_2D,axis=1)
 Number_Boundary_Points=[[50,50],[50,50]]
