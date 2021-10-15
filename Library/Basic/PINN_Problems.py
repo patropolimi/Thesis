@@ -41,9 +41,7 @@ class Burgers_Scalar_Basic(Wrapper_Scalar_Basic):
 
 
 	def __init__(self,Architecture,Domain,Data):
-		Architecture['Input_Dimension']=2
 		super().__init__(Architecture,Domain,Data)
-		self.Data['Nu']=Data['Nu']
 		self.Equation=self.Burgers_Left_Hand_Side
 
 
@@ -87,7 +85,6 @@ class Heat_Scalar_Basic(Wrapper_Scalar_Basic):
 
 	def __init__(self,Architecture,Domain,Data):
 		super().__init__(Architecture,Domain,Data)
-		self.Data['Nu']=Data['Nu']
 		self.Equation=self.Heat_Left_Hand_Side
 
 
@@ -129,7 +126,6 @@ class Wave_Scalar_Basic(Wrapper_Scalar_Basic):
 
 	def __init__(self,Architecture,Domain,Data):
 		super().__init__(Architecture,Domain,Data)
-		self.Data['C']=Data['C']
 		self.Equation=self.Wave_Left_Hand_Side
 
 
@@ -178,8 +174,6 @@ class Allen_Cahn_Scalar_Basic(Wrapper_Scalar_Basic):
 
 	def __init__(self,Architecture,Domain,Data):
 		super().__init__(Architecture,Domain,Data)
-		self.Data['Gamma1']=Data['Gamma1']
-		self.Data['Gamma2']=Data['Gamma2']
 		self.Equation=self.Allen_Cahn_Left_Hand_Side
 
 
@@ -220,7 +214,6 @@ class Helmholtz_Scalar_Basic(Wrapper_Scalar_Basic):
 
 	def __init__(self,Architecture,Domain,Data):
 		super().__init__(Architecture,Domain,Data)
-		self.Data['K']=Data['K']
 		self.Equation=self.Helmholtz_Left_Hand_Side
 
 
