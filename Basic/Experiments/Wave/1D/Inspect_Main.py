@@ -3,7 +3,7 @@
 from Basic.PINN_Resolutors import *
 
 
-""" Inspect Main To Study Models Created For Heat 1D """
+""" Inspect Main To Study Models Created For Wave 1D """
 
 
 NT=1001
