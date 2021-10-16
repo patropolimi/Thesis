@@ -146,6 +146,27 @@ def Set_Boundary_Points_And_Values(BouLists,BouLabs,Ex_Bou_D,Ex_Bou_N):
 	return Dirichlet_Lists,Dirichlet_Values,Neumann_Lists,Neumann_Values,Periodic_Lists,Periodic_Lower_Points,Periodic_Upper_Points
 
 
+def Handler_Accelleration(self):
+
+	""" Handler For Differential Problems Including Accelleration """
+
+	self.Domain['Initial_Velocity_Points']=Set_Initial_Velocity_Points(self.Domain['Limits'],self.Domain['Number_Initial_Velocity_Points'])
+	self.Data['Neumann_Lists']+=[[self.Domain['Initial_Velocity_Points'],0]]
+	self.Data['Neumann_Values']+=[self.Data['Exact_Neumann'](self.Domain['Initial_Velocity_Points'])]
+
+
+def Set_Initial_Velocity_Points(Limits,N):
+
+	""" Set Boundary Initial Velocity Points For Differential Problems Including Accelleration """
+
+	Dim=Limits.shape[0]
+	if (Dim==1):
+		return np.array([[Limits[0,0]]])
+	else:
+		Samples=sm.LHS(xlimits=Limits[1:,:])(N)
+		return np.concatenate((Limits[0,0]*np.ones((N,1)),Samples),axis=1).T
+
+
 def Globals(Set=None):
 
 	""" Return/Set Global Variables Rows-Cum """
