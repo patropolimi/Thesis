@@ -126,6 +126,7 @@ class Wave_Scalar_Basic(Wrapper_Scalar_Basic):
 
 	def __init__(self,Architecture,Domain,Data):
 		super().__init__(Architecture,Domain,Data)
+		Handler_Accelleration(self)
 		self.Equation=self.Wave_Left_Hand_Side
 
 
@@ -138,7 +139,7 @@ class Wave_Scalar_Basic(Wrapper_Scalar_Basic):
 
 		Hessian_Diagonal=jnp.diag(self.Hessian_Network_Single(X,W))
 		Gradient_TT=jnp.reshape(Hessian_Diagonal[0],(1,))
-		Laplacian=jnp.reshape(jnp.sum(Hessian_Diagonal[1,:]),(1,))
+		Laplacian=jnp.reshape(jnp.sum(Hessian_Diagonal[1:]),(1,))
 		return jnp.concatenate((Gradient_TT,Laplacian),axis=0)
 
 
@@ -157,7 +158,7 @@ class Wave_Scalar_Basic(Wrapper_Scalar_Basic):
 
 		""" Overall Network Wave Equation Left Hand Side Computation """
 
-		Second_Order_Elements=Gradient_TT_And_Laplacian(X,W)
+		Second_Order_Elements=self.Gradient_TT_And_Laplacian(X,W)
 		Gradients_TT=Second_Order_Elements[0,:][None,:]
 		Laplacians=Second_Order_Elements[1,:][None,:]
 		return (Gradients_TT-(self.Data['C']**2)*Laplacians)
