@@ -15,19 +15,19 @@ SolutionString='1*sin(2*pi*x)+0.1*sin(50*pi*x)'
 def G(X):
 	return jnp.sum(jnp.zeros_like(X),axis=0)[None,:]
 
-Test=3
+Test=1
 NAttempts=3
 Number_Residuals=[500]
 ADAM_BatchFraction=[1.0]
 ADAM_Steps=10000
-LBFGS_MaxSteps=350000
+LBFGS_MaxSteps=50000
 Limits=np.array([[-1.0,1.0]])
 NX=2001
 PX=np.linspace(-1.0,1.0,NX)
 Number_Boundary_Points=[[1,1]]
 Boundary_Labels=2*['Dirichlet']
 Hidden_Layers=[1]
-Neurons_Per_Layer=[350]
+Neurons_Per_Layer=[250]
 Initialization='Uniform'
 Activations={'Tanh': jnp.tanh}
 ADAM_Parameters=None
