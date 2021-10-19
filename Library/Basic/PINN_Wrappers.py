@@ -13,7 +13,7 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 		PINN_Basic.__init__(self,Architecture)
 		Geometry_HyperRectangular.__init__(self,Domain)
 		self.Data=Data
-		self.Data['Dirichlet_Lists'],self.Data['Dirichlet_Values'],self.Data['Neumann_Lists'],self.Data['Neumann_Values'],self.Data['Periodic_Lists'],self.Data['Periodic_Lower_Points'],self.Data['Periodic_Upper_Points']=Set_Boundary_Points_And_Values(self.Domain['Boundary_Lists'],Domain['Boundary_Labels'],Data['Exact_Dirichlet'],Data['Exact_Neumann'])
+		self.Data['Dirichlet_Lists'],self.Data['Dirichlet_Values'],self.Data['Neumann_Lists'],self.Data['Neumann_Values'],self.Data['Periodic_Lower_Lists'],self.Data['Periodic_Upper_Lists']=Set_Boundary_Points_And_Values(self.Domain['Boundary_Lists'],Domain['Boundary_Labels'],Data['Exact_Dirichlet'],Data['Exact_Neumann'])
 		self.Gradient_Network_Single=jax.jit(jax.grad(self.Network_Single))
 		self.Hessian_Network_Single=jax.jit(jax.jacobian(self.Gradient_Network_Single))
 		self.Gradient_Cost=jax.jit(jax.grad(self.Cost))
@@ -54,7 +54,7 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 
 		""" Helper -> Provides BC Default Argument X """
 
-		return {'Dirichlet_Lists': self.Data['Dirichlet_Lists'],'Dirichlet_Values': self.Data['Dirichlet_Values'],'Neumann_Lists': self.Data['Neumann_Lists'],'Neumann_Values': self.Data['Neumann_Values'],'Periodic_Lower_Points': self.Data['Periodic_Lower_Points'],'Periodic_Upper_Points': self.Data['Periodic_Upper_Points']}
+		return {'Dirichlet_Lists': self.Data['Dirichlet_Lists'],'Dirichlet_Values': self.Data['Dirichlet_Values'],'Neumann_Lists': self.Data['Neumann_Lists'],'Neumann_Values': self.Data['Neumann_Values'],'Periodic_Lower_Lists': self.Data['Periodic_Lower_Lists'],'Periodic_Upper_Lists': self.Data['Periodic_Upper_Lists']}
 
 
 	@partial(jax.jit,static_argnums=(0))
@@ -71,9 +71,12 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 			FaceGradients=jax.vmap(self.Gradient_Network_Single,in_axes=(1,None),out_axes=1)(FacePoints,W)
 			Result+=jnp.sum((FaceValues-(jax.vmap(jnp.inner,in_axes=(1,None))(FaceGradients,jnp.take(self.Domain['Boundary_Normals'],FaceIndex,axis=1)))[None,:])**2)
 			Count+=FacePoints.shape[1]
-		for LowerPoints,UpperPoints in zip(X['Periodic_Lower_Points'],X['Periodic_Upper_Points']):
+		for [LowerPoints,FaceIndexLower],[UpperPoints,FaceIndexUpper] in zip(X['Periodic_Lower_Lists'],X['Periodic_Upper_Lists']):
 			Result+=jnp.sum((self.Network_Multiple(LowerPoints,W)-self.Network_Multiple(UpperPoints,W))**2)
-			Count+=LowerPoints.shape[1]
+			FaceGradientsLower=jax.vmap(self.Gradient_Network_Single,in_axes=(1,None),out_axes=1)(LowerPoints,W)
+			FaceGradientsUpper=jax.vmap(self.Gradient_Network_Single,in_axes=(1,None),out_axes=1)(UpperPoints,W)
+			Result+=jnp.sum(((jax.vmap(jnp.inner,in_axes=(1,None))(FaceGradientsLower,jnp.take(self.Domain['Boundary_Normals'],FaceIndexLower,axis=1)))+(jax.vmap(jnp.inner,in_axes=(1,None))(FaceGradientsUpper,jnp.take(self.Domain['Boundary_Normals'],FaceIndexUpper,axis=1))))**2)
+			Count+=2*LowerPoints.shape[1]
 		return Result/Count
 
 

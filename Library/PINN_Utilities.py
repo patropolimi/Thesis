@@ -136,14 +136,14 @@ def Set_Boundary_Points_And_Values(BouLists,BouLabs,Ex_Bou_D,Ex_Bou_N):
 		Neumann_Values=[Ex_Bou_N(FacePoints) for FacePoints,_ in Neumann_Lists]
 	else:
 		Neumann_Values=[]
-	Periodic_Lists=[BouLists[i] for i in range(NBL) if (BouLabs[i]=='Periodic')]
+	Periodic_Lists=[[BouLists[i],i] for i,bc in enumerate(BouLabs) if (bc=='Periodic')]
 	if Periodic_Lists:
-		Periodic_Lower_Points=Periodic_Lists[::2]
-		Periodic_Upper_Points=Periodic_Lists[1::2]
+		Periodic_Lower_Lists=Periodic_Lists[::2]
+		Periodic_Upper_Lists=Periodic_Lists[1::2]
 	else:
-		Periodic_Lower_Points=[]
-		Periodic_Upper_Points=[]
-	return Dirichlet_Lists,Dirichlet_Values,Neumann_Lists,Neumann_Values,Periodic_Lists,Periodic_Lower_Points,Periodic_Upper_Points
+		Periodic_Lower_Lists=[]
+		Periodic_Upper_Lists=[]
+	return Dirichlet_Lists,Dirichlet_Values,Neumann_Lists,Neumann_Values,Periodic_Lower_Lists,Periodic_Upper_Lists
 
 
 def Handler_Accelleration(self):
