@@ -5,13 +5,7 @@ from Basic.PINN_Resolutors import *
 
 """ Organizer Script [To Be Launched Once For Each Test] [To Be Tuned For Each Launch] -> Basic PINN Sensitivity Analysis (Single-Scale)
 
-	Problem: Scalar 1D Poisson With Homogeneous Dirichlet Conditions In Domain [-1,1]
-
-	Gathering Models Results -> Creation Of Files With:
-	- Relative L2 Error Average Table For Every Number Of Residuals
-	- Relative L2 Error Best Table For Every Number Of Residuals
-
-	For Each Combination Of [Frequency-Activation] -> Creation Of File With Tables """
+	Problem: Scalar 1D Poisson With Homogeneous Dirichlet Conditions In Domain [-1,1] """
 
 
 Test=1

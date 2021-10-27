@@ -5,29 +5,7 @@ from Basic.PINN_Resolutors import *
 
 """ Launch Script [To Be Launched Once For Each Test] [To Be Tuned By Hand For Every Launch] -> Basic PINN Sensitivity Analysis (Single-Scale)
 
-	Problem: Scalar 1D Poisson With Homogeneous Dirichlet Conditions In Domain [-1,1]
-
-	Launch To Create PINNs To Approximate:
-	- [VeryLow, Low, Medium, High, VeryHigh] Frequency Solutions
-
-	Trial Activation Function:
-	- Tanh (Hyperbolic Tangent)
-
-	Trial Architecture Parameters:
-	- Hidden_Layers -> [1,2,3]
-	- Neurons_Per_Layer -> [10,20,40]
-
-	Trial Uniform Residuals:
-	- [25,250,2500]
-
-	Three Models Trained With [ADAM,L-BFGS] (10000 ADAM Steps, 20000 Maximum L-BFGS Steps [Both Default Settings & Full Batch]) For Each Combination -> [Residuals-Frequency-Architecture-Activation]
-	Each Model -> Saved In Proper Folder As Dictionary Containing:
-	- History Cost Function
-	- Final Relative L2 Error
-	- Elapsed Learning Time
-	- Error Discrete Fourier Transform
-	- Network & Solution Evaluations
-	- Solution String """
+	Problem: Scalar 1D Poisson With Homogeneous Dirichlet Conditions In Domain [-1,1] """
 
 
 def F_VeryLow(X):
@@ -81,6 +59,8 @@ Activations={'Tanh': jnp.tanh}
 Sources={'VeryLow': F_VeryLow,'Low': F_Low,'Medium': F_Medium,'High': F_High,'VeryHigh': F_VeryHigh}
 Solution={'VeryLow': Sol_VeryLow,'Low': Sol_Low,'Medium': Sol_Medium,'High': Sol_High,'VeryHigh': Sol_VeryHigh}
 String={'VeryLow': String_VeryLow,'Low': String_Low,'Medium': String_Medium,'High': String_High,'VeryHigh': String_VeryHigh}
+ADAM_Parameters=None
+LBFGS_Parameters={'Memory': 10,'GradTol': 1e-6,'AlphaTol': 1e-6,'StillTol': 10,'AlphaZero': 10.0,'C': 0.5,'T': 0.5,'Eps': 1e-8}
 
 
 for c,NR in enumerate(Number_Residuals):
@@ -94,7 +74,7 @@ for c,NR in enumerate(Number_Residuals):
 						Data={'Source': SRC,'Exact_Dirichlet': G,'Exact_Neumann': G}
 						Solver=Resolutor_Basic[Poisson_Scalar_Basic](Architecture,Domain,Data)
 						Start=time.perf_counter()
-						History=Solver.Learn(ADAM_Steps,ADAM_BatchFraction[c],LBFGS_MaxSteps)
+						History=Solver.Learn(ADAM_Steps,ADAM_BatchFraction[c],LBFGS_MaxSteps,ADAM_Params=ADAM_Parameters,LBFGS_Params=LBFGS_Parameters)
 						End=time.perf_counter()
 						Elapsed=End-Start
 						Network_Eval=Solver.Network_Multiple(Points[None,:],Solver.Architecture['W'])[0,:]
