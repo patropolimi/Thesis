@@ -5,20 +5,7 @@ from Basic.PINN_Resolutors import *
 
 """ Launch Script [To Be Launched Once For Each Test] [To Be Tuned By Hand For Every Launch] -> Basic PINN Convergence Analysis (Multi-Scale)
 
-	Carried Basing On Results -> Basic PINN Sensitivity Analysis & Basic PINN Convergence Analysis (Single-Scale)
-
-	Problem: Scalar 1D Poisson With Homogeneous Dirichlet Conditions In Domain [-1,1]
-
-    Objective -> Evaluate Convergence Of PINN With Respect To Number Of Residuals
-
-	Three Models Trained With [ADAM,L-BFGS] (10000 ADAM Steps (Default Settings), 50000 Maximum L-BFGS Steps (Default Settings Except Memory -> 100) [Both Full Batch]) For Each Combination Of [Residuals]
-	Each Model -> Saved In Proper Folder As Dictionary Containing:
-	- History Cost Function
-	- Final Relative L2 Error
-	- Elapsed Learning Time
-	- Error Discrete Fourier Transform
-	- Network & Solution Evaluations
-	- Solution String """
+	Problem: Scalar 1D Poisson With Homogeneous Dirichlet Conditions In Domain [-1,1] """
 
 
 Coeffs={'VeryLow': 15,'Low': 3,'Medium': 3/2,'High': 1,'VeryHigh': 3/5}
