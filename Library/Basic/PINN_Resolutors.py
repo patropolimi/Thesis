@@ -105,8 +105,6 @@ class Resolutor_Basic(P,metaclass=Template[P]):
 			- First Iterations To Initialize Memory Vectors -> BFGS
 			- Remaining Iterations -> L-BFGS """
 
-		LBFGS_Default={'Memory': 10,'GradTol': 1e-6,'AlphaTol': 1e-6,'StillTol': 10,'AlphaZero': 10.0,'C': 0.5,'T': 0.5,'Eps': 1e-8}
-
 		if Parameters is None:
 			[Memory,GradTol,AlphaTol,StillTol,AlphaZero,C,T,Eps]=[self.LBFGS_Default['Memory'],self.LBFGS_Default['GradTol'],self.LBFGS_Default['AlphaTol'],self.LBFGS_Default['StillTol'],self.LBFGS_Default['AlphaZero'],self.LBFGS_Default['C'],self.LBFGS_Default['T'],self.LBFGS_Default['Eps']]
 		else:
@@ -118,8 +116,7 @@ class Resolutor_Basic(P,metaclass=Template[P]):
 		Memory_Ro=Cyclic_Deque(Memory,0)
 		I=np.eye(N)
 		B=np.copy(I)
-		Cost_Pre=self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
-		Grad_Pre=self.Gradient_Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
+		Cost_Pre,Grad_Pre=self.Value_And_Gradient_Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
 		Cost_Hist=[Cost_Pre.item()]
 		Consecutive_Still=0
 		Alpha=AlphaZero
@@ -138,8 +135,7 @@ class Resolutor_Basic(P,metaclass=Template[P]):
 				Alpha=self.Line_Search(self.Architecture['W'],Direction,jnp.inner(Grad_Pre,Direction),C,T,Cost_Pre,Alpha,AlphaZero,Eps)
 				S=Alpha*Direction
 				self.Architecture['W']+=S
-				Cost_Post=self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
-				Grad_Post=self.Gradient_Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
+				Cost_Post,Grad_Post=self.Value_And_Gradient_Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())
 				Y=Grad_Post-Grad_Pre
 				Denominator=jnp.inner(S,Y)
 				Memory_DeltaW.Insert(S)

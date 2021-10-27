@@ -17,6 +17,7 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 		self.Gradient_Network_Single=jax.jit(jax.grad(self.Network_Single))
 		self.Hessian_Network_Single=jax.jit(jax.jacobian(self.Gradient_Network_Single))
 		self.Gradient_Cost=jax.jit(jax.grad(self.Cost))
+		self.Value_And_Gradient_Cost=jax.jit(jax.value_and_grad(self.Cost))
 		self.Equation=None
 
 
