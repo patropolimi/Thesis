@@ -31,6 +31,49 @@ class Poisson_Scalar_Basic(Wrapper_Scalar_Basic):
 		return (jax.vmap(self.SingleLaplacian,in_axes=(1,None))(X,W))[None,:]
 
 
+class Advection_Scalar_Basic(Wrapper_Scalar_Basic):
+
+	""" Advection Scalar Problem Upon Basic PINN
+
+		Input Vector -> [T;X]
+
+		- T: Time Variable
+		- X: Space Variable """
+
+
+	def __init__(self,Architecture,Domain,Data):
+		super().__init__(Architecture,Domain,Data)
+		self.Equation=self.Advection_Left_Hand_Side
+
+
+	@partial(jax.jit,static_argnums=(0))
+	def SingleLaplacian(self,X,W):
+
+		""" Single Input Contribution/Component Network Laplacian """
+
+		return jnp.sum(jnp.diag(self.Hessian_Network_Single(X,W)))
+
+
+	@partial(jax.jit,static_argnums=(0))
+	def Laplacian(self,X,W):
+
+		""" Overall Network Laplacian Computation """
+
+		return (jax.vmap(self.SingleLaplacian,in_axes=(1,None))(X,W))[None,:]
+
+
+	@partial(jax.jit,static_argnums=(0))
+	def Advection_Left_Hand_Side(self,X,W):
+
+		""" Overall Network Advection Equation Left Hand Side Computation """
+
+		Gradients=jax.vmap(self.Gradient_Network_Single,in_axes=(1,None),out_axes=1)(X,W)
+		Gradients_T=Gradients[0,:][None,:]
+		Gradients_X=jnp.sum(Gradients[1:,:],axis=0)[None,:]
+		Laplacians=self.Laplacian(X,W)
+		return (Gradients_T+self.Data['U']*Gradients_X-self.Data['G']*Laplacians)
+
+
 class Burgers_Scalar_Basic(Wrapper_Scalar_Basic):
 
 	""" Burgers Scalar Problem Upon Basic PINN
