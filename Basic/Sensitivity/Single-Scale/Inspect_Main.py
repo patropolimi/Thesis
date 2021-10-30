@@ -3,45 +3,37 @@
 from Basic.PINN_Resolutors import *
 
 
-""" Inspect Main To Study Models Created For Single-Scale Sensitivity Analysis Of Basic PINN
-
-	Problem: Scalar 1D Poisson With Homogeneous Boundary Conditions In Domain [-1,1] """
-
-
-Points=np.linspace(-1,1,20001)
+""" Inspect Main To Study Models Created For Basic PINN Single-Scale Sensitivity Analysis """
 
 
 def main():
 	while (True):
 		Continue=int(input('Choose:\n0: Leave\n1: Inspect\n'))
 		if (Continue):
-			Act=str(input('Activation: '))
 			T=str(input('Test: '))
+			Act=str(input('Activation: '))
 			F=str(input('Frequency: '))
 			HL=str(input('Hidden Layers: '))
 			NPL=str(input('Neurons Per Layer: '))
 			NR=str(input('Number Residuals: '))
-			I=str(input('Instance: '))
-			Name='Models_'+Act+'/'+'Test_'+T+'/'+'Model_'+F+'_'+HL+'HL_'+NPL+'NPL_'+NR+'NR_'+I
-			File=open(Name,'rb')
-			Model=dill.load(File)
-			Fig1=plt.figure(1)
-			Fig1.suptitle('Cost Evolution')
-			plt.semilogy(Model['History'])
-			plt.show()
-			Fig2=plt.figure(2)
-			Fig2.suptitle('Network & Solution')
-			plt.plot(Points,Model['Network_Eval'])
-			plt.plot(Points,Model['Solution_Eval'])
-			plt.show()
-			Fig3=plt.figure(3)
-			Fig3.suptitle('Error Discrete Fourier Transform (Absolute Value)')
-			plt.plot(Model['DFT_Freqs'],np.abs(Model['DFT_Error']))
-			plt.show()
-			print('Relative L2 Error: ', Model['Relative_L2_Error'])
-			print('Total Learning Time: ', Model['Time'])
-			print('Solution: ', Model['Solution'])
-			File.close()
+			I=int(input('Instances: '))
+			for i in range(I):
+				Name='Test_'+T+'/'+Act+'_Model_'+F+'_'+HL+'HL_'+NPL+'NPL_'+NR+'NR_'+str(i+1)
+				File=open(Name,'rb')
+				Model=dill.load(File)
+				Fig1=plt.figure(1)
+				Fig1.suptitle('Cost Evolution')
+				plt.semilogy(Model['History'])
+				Fig2=plt.figure(2)
+				Fig2.suptitle('Network & Solution')
+				plt.plot(Model['Points_Eval'],Model['Network_Eval'],label='Network')
+				plt.plot(Model['Points_Eval'],Model['Solution_Eval'],label=Model['Solution'])
+				plt.legend()
+				plt.show()
+				print('Attempt #'+str(i+1))
+				print('Relative L2 Error: ', Model['Relative_L2_Error'])
+				print('Total Learning Time: ', Model['Time'])
+				File.close()
 		else:
 			break
 

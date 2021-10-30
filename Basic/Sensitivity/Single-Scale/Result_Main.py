@@ -3,21 +3,19 @@
 from Basic.PINN_Resolutors import *
 
 
-""" Main To Show Error Result Tables -> Basic PINN Sensitivity Analysis (Single-Scale)
-
-	Problem: Scalar 1D Poisson With Homogeneous Dirichlet Conditions In Domain [-1,1] """
+""" Main To Show Error Result Tables For Basic PINN Single-Scale Sensitivity Analysis """
 
 
 def main():
-	print('Row Indexes -> Different Neurons Per Layer Options In Increasing Order')
+	print('Row Indexes -> Represent Different Neurons Per Layer Options In Increasing Order')
 	print('Column Indexes -> Represent Different Hidden Layers Options In Increasing Order')
 	while (True):
-		Continue=int(input('\nChoose:\n0: Leave\n1: Show\n'))
+		Continue=int(input('Choose:\n0: Leave\n1: Show\n'))
 		if (Continue):
-			Act=str(input('Activation: '))
 			T=str(input('Test: '))
+			Act=str(input('Activation: '))
 			F=str(input('Frequency: '))
-			Name='Models_'+Act+'/'+'Test_'+T+'/'+'Models_'+F+'_Tables'
+			Name='Test_'+T+'/'+Act+'_Models_'+F+'_Tables'
 			File=open(Name,'rb')
 			Model=dill.load(File)
 			File.close()
