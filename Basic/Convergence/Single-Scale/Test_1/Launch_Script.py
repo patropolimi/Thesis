@@ -34,7 +34,7 @@ for NR in Number_Residuals:
 				for i in range(NAttempts):
 					Architecture={'Input_Dimension': 1,'Hidden_Layers': HL,'Neurons_Per_Layer': HL*[NPL],'Activation': Sigma,'Initialization': Initialization}
 					Domain={'Dimension': 1,'Limits': Limits,'Number_Residuals': NR,'Number_Boundary_Points': Number_Boundary_Points,'Boundary_Labels': Boundary_Labels}
-					Data={'Source': F,'Exact_Dirichlet': G,'Exact_Neumann': G}
+					Data={'Source': F,'Exact_Dirichlet': G,'Exact_Neumann': None}
 					Solver=Resolutor_Basic[Problem](Architecture,Domain,Data)
 					Start=time.perf_counter()
 					History=Solver.Learn(ADAM_Steps,LBFGS_MaxSteps,Parameters)
