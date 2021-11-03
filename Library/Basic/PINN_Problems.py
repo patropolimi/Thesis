@@ -3,6 +3,26 @@
 from Basic.PINN_Wrappers import *
 
 
+class ODE_Scalar_Basic(Wrapper_Scalar_Basic):
+
+	""" ODE Scalar Problem Upon Basic PINN
+
+		Input Vector -> X: 1D Space Variable """
+
+
+	def __init__(self,Architecture,Domain,Data):
+		super().__init__(Architecture,Domain,Data)
+		self.Equation=self.Gradient
+
+
+	@partial(jax.jit,static_argnums=(0))
+	def Gradient(self,X,W):
+
+		""" Overall Network Gradient Computation """
+
+		return jax.vmap(self.Gradient_Network_Single,in_axes=(1,None),out_axes=1)(X,W)
+
+
 class Poisson_Scalar_Basic(Wrapper_Scalar_Basic):
 
 	""" Poisson Scalar Problem Upon Basic PINN
@@ -31,9 +51,9 @@ class Poisson_Scalar_Basic(Wrapper_Scalar_Basic):
 		return (jax.vmap(self.SingleLaplacian,in_axes=(1,None))(X,W))[None,:]
 
 
-class Advection_Scalar_Basic(Wrapper_Scalar_Basic):
+class Advection_Diffusion_Reaction_Scalar_Basic(Wrapper_Scalar_Basic):
 
-	""" Advection Scalar Problem Upon Basic PINN
+	""" Advection-Diffusion-Reaction Scalar Problem Upon Basic PINN
 
 		Input Vector -> [T;X]
 
@@ -43,7 +63,7 @@ class Advection_Scalar_Basic(Wrapper_Scalar_Basic):
 
 	def __init__(self,Architecture,Domain,Data):
 		super().__init__(Architecture,Domain,Data)
-		self.Equation=self.Advection_Left_Hand_Side
+		self.Equation=self.Advection_Diffusion_Reaction_Left_Hand_Side
 
 
 	@partial(jax.jit,static_argnums=(0))
@@ -63,15 +83,16 @@ class Advection_Scalar_Basic(Wrapper_Scalar_Basic):
 
 
 	@partial(jax.jit,static_argnums=(0))
-	def Advection_Left_Hand_Side(self,X,W):
+	def Advection_Diffusion_Reaction_Left_Hand_Side(self,X,W):
 
-		""" Overall Network Advection Equation Left Hand Side Computation """
+		""" Overall Network Advection-Diffusion-Reaction Equation Left Hand Side Computation """
 
 		Gradients=jax.vmap(self.Gradient_Network_Single,in_axes=(1,None),out_axes=1)(X,W)
-		Gradients_T=Gradients[0,:][None,:]
-		Gradients_X=jnp.sum(Gradients[1:,:],axis=0)[None,:]
+		Gradients_T=Gradients[:1,:]
+		Gradients_X=Gradients[1:,:]
 		Laplacians=self.Laplacian(X,W)
-		return (Gradients_T+self.Data['U']*Gradients_X-self.Data['G']*Laplacians)
+		Advections=jax.vmap(jnp.inner,in_axes=(None,1))(self.Data['U'],Gradients_X)[None,:]
+		return (Gradients_T+Advections+self.Data['G']*self.Network_Multiple(X,W)-self.Data['D']*Laplacians)
 
 
 class Burgers_Scalar_Basic(Wrapper_Scalar_Basic):
