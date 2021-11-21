@@ -3,6 +3,18 @@
 from Basic.PINN_Wrappers import *
 
 
+class Identity_Scalar_Basic(Wrapper_Scalar_Basic):
+
+	""" Identity Scalar Problem Upon Basic PINN
+
+		Input Vector -> X: Space-Time Variable """
+
+
+	def __init__(self,Architecture,Domain,Data):
+		super().__init__(Architecture,Domain,Data)
+		self.Equation=self.Network_Multiple
+
+
 class ODE_Scalar_Basic(Wrapper_Scalar_Basic):
 
 	""" ODE Scalar Problem Upon Basic PINN
