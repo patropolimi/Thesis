@@ -3,7 +3,7 @@
 from Basic.PINN_Resolutors import *
 
 
-""" Test 2 Launch Script -> Basic PINN Generic Sensitivity Analysis"""
+""" Test 5 Launch Script -> Basic PINN Generic Sensitivity Analysis"""
 
 
 def F(X):
