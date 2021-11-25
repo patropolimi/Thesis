@@ -9,7 +9,7 @@ class PINN_Basic:
 
 	def __init__(self,Architecture):
 		self.Architecture=Architecture
-		self.Architecture['W'],self.Architecture['Rows'],self.Architecture['Cum']=Flatten_SetGlobals(eval('Glorot_'+Architecture['Initialization'])(Architecture['Input_Dimension'],Architecture['Output_Dimension'],Architecture['Hidden_Layers'],Architecture['Neurons_Per_Layer']))
+		self.Architecture['W'],self.Architecture['Rows'],self.Architecture['Cum']=Flatten_SetGlobals(eval(Architecture['Initialization'])(Architecture['Input_Dimension'],Architecture['Output_Dimension'],Architecture['Hidden_Layers'],Architecture['Neurons_Per_Layer']))
 
 
 	@partial(jax.jit,static_argnums=(0))
