@@ -9,17 +9,17 @@ from Basic.PINN_Resolutors import *
 def F(X):
 	return (jnp.sum(jnp.zeros_like(X),axis=0))[None,:]
 def S(X):
-	return (jnp.exp(-X[0,:])*jnp.sin(3*jnp.pi*X[1,:]))[None,:]
-String='exp(-t)*sin(3*pi*x)'
+	return (1.0-jnp.tanh((1.0/5e-3)*(X[1,:]-X[0,:])))[None,:]
+String='1-tanh(200*(x-t))'
 def G(X):
-	return (jnp.exp(-X[0,:])*jnp.sin(3*jnp.pi*X[1,:]))[None,:]
+	return (1.0-jnp.tanh((1.0/5e-3)*(X[1,:]-X[0,:])))[None,:]
 NAttempts=3
-Number_Residuals=[100,200,400]
+Number_Residuals=[400,800]
 ADAM_Steps=25000
-LBFGS_MaxSteps=125000
-Limits=np.array([[-1.0,1.0],[-1.0,1.0]])
-Points_T=np.linspace(-1.0,1.0,2001)
-Points_X=np.linspace(-1.0,1.0,2001)
+LBFGS_MaxSteps=225000
+Limits=np.array([[0.0,1.0],[0.0,1.0]])
+Points_T=np.linspace(0.0,1.0,1001)
+Points_X=np.linspace(0.0,1.0,1001)
 NT=Points_T.shape[0]
 NX=Points_X.shape[0]
 TV=Points_T[None,:]
@@ -34,7 +34,7 @@ Hidden_Layers=[1,2]
 Neurons_Per_Layer=[25,50,100]
 Initialization='Glorot_Uniform'
 Activations={'Tanh': jnp.tanh,'Relu': jax.nn.relu}
-Problem=Heat_Scalar_Basic
+Problem=Burgers_Scalar_Basic
 Parameters=None
 for NR in Number_Residuals:
 	for SigmaName,Sigma in Activations.items():
@@ -43,7 +43,7 @@ for NR in Number_Residuals:
 				for i in range(NAttempts):
 					Architecture={'Input_Dimension': 2,'Hidden_Layers': HL,'Neurons_Per_Layer': HL*[NPL],'Activation': Sigma,'Initialization': Initialization}
 					Domain={'Dimension': 2,'Limits': Limits,'Number_Residuals': NR,'Number_Boundary_Points': Number_Boundary_Points,'Boundary_Labels': Boundary_Labels}
-					Data={'Source': F,'Exact_Dirichlet': G,'Exact_Neumann': None,'Nu': 1.0/(3*jnp.pi)**2}
+					Data={'Source': F,'Exact_Dirichlet': G,'Exact_Neumann': None,'Nu': 2.5e-3}
 					Solver=Resolutor_Basic[Problem](Architecture,Domain,Data)
 					Start=time.perf_counter()
 					History=Solver.Learn(ADAM_Steps,LBFGS_MaxSteps,Parameters)
