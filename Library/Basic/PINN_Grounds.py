@@ -7,6 +7,7 @@ class PINN_Basic:
 
 	""" Basic Version Physics-Informed Neural Network """
 
+
 	def __init__(self,Architecture):
 		self.Architecture=Architecture
 		self.Architecture['W'],self.Architecture['Rows'],self.Architecture['Cum']=Flatten_SetGlobals(eval(Architecture['Initialization'])(Architecture['Input_Dimension'],Architecture['Output_Dimension'],Architecture['Hidden_Layers'],Architecture['Neurons_Per_Layer']))
