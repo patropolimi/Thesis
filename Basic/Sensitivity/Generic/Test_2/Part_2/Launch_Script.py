@@ -8,7 +8,7 @@ from Basic.PINN_Resolutors import *
 
 def H(X):
 	return (jax.nn.relu(2*X)-2*jax.nn.relu(2*X-1)+jax.nn.relu(2*X-2))
-N=1
+N=4
 def S(X):
 	Y=H(X)
 	for i in range(N-1):
@@ -18,19 +18,19 @@ def SingleS(X):
 	return jnp.sum(S(X))
 String=str(2**(N-1))+'Teeth_Saw_[0,1]'
 def F(X):
-	return (jax.vmap(jax.grad(SingleS),in_axes=1)(X))[None,:]
+	return (jax.vmap(jax.grad(SingleS),in_axes=1,out_axes=1)(X))
 def G(X):
 	return jnp.zeros_like(X)
 NAttempts=3
-Number_Residuals=[20,40,80,160]
-ADAM_Steps=10000
-LBFGS_MaxSteps=20000
+Number_Residuals=[50,100,200]
+ADAM_Steps=25000
+LBFGS_MaxSteps=125000
 Limits=np.array([[0.0,1.0]])
-Points=np.linspace(0.0,1.0,1001)
+Points=np.linspace(0.0,1.0,10001)
 Number_Boundary_Points=[[1,0]]
 Boundary_Labels=['Dirichlet','None']
-Hidden_Layers=[1,2]
-Neurons_Per_Layer=[25,50,100]
+Hidden_Layers=[1,2,3]
+Neurons_Per_Layer=[2,4,8,16,32,64,128,256]
 Initialization='Glorot_Uniform'
 Activations={'Tanh': jnp.tanh,'Relu': jax.nn.relu}
 Problem=ODE_Scalar_Basic
