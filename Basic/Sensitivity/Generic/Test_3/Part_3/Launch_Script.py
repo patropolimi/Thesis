@@ -3,10 +3,10 @@
 from Basic.PINN_Resolutors import *
 
 
-""" Test 3 [Part 2] Launch Script -> Basic PINN Generic Sensitivity Analysis"""
+""" Test 3 [Part 3] Launch Script -> Basic PINN Generic Sensitivity Analysis"""
 
 
-N=4
+N=5
 NV=2**(N)-1
 Epsilon=1e-1/(2**(N-1))
 def H(X):
@@ -33,13 +33,13 @@ def G(X):
 NAttempts=3
 Number_Residuals=[100*(2**(N-1))]
 ADAM_Steps=25000
-LBFGS_MaxSteps=125000
+LBFGS_MaxSteps=175000
 Limits=np.array([[0.0,1.0]])
 Points=np.linspace(0.0,1.0,10001)
 Number_Boundary_Points=[[1,1]]
 Boundary_Labels=2*['Dirichlet']
 Hidden_Layers=[1,2,3]
-Neurons_Per_Layer=[2,4,8,16,32,64,128,256]
+Neurons_Per_Layer=[5,10,20,40,80,160,320]
 Initialization='Glorot_Uniform'
 Activations={'Tanh': jnp.tanh,'Relu': jax.nn.relu}
 Problem=Poisson_Scalar_Basic
