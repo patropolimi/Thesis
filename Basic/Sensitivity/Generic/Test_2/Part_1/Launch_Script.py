@@ -6,23 +6,31 @@ from Basic.PINN_Resolutors import *
 """ Test 2 [Part 1] Launch Script -> Basic PINN Generic Sensitivity Analysis"""
 
 
-def F(X):
-	return -10*jnp.exp(-X)
+def H(X):
+	return (jax.nn.relu(2*X)-2*jax.nn.relu(2*X-1)+jax.nn.relu(2*X-2))
+N=3
 def S(X):
-	return 10*jnp.exp(-X)
-String='10*exp(-x)'
+	Y=H(X)
+	for i in range(N-1):
+		Y=H(Y)
+	return Y
+def SingleS(X):
+	return jnp.sum(S(X))
+String=str(2**(N-1))+'Teeth_Saw_[0,1]'
+def F(X):
+	return (jax.vmap(jax.grad(SingleS),in_axes=1,out_axes=1)(X))
 def G(X):
-	return 10*jnp.ones_like(X)
+	return jnp.zeros_like(X)
 NAttempts=3
-Number_Residuals=[40,80,160,320]
-ADAM_Steps=10000
-LBFGS_MaxSteps=40000
-Limits=np.array([[0.0,10.0]])
-Points=np.linspace(0.0,10.0,10001)
+Number_Residuals=[20,40,80]
+ADAM_Steps=25000
+LBFGS_MaxSteps=75000
+Limits=np.array([[0.0,1.0]])
+Points=np.linspace(0.0,1.0,10001)
 Number_Boundary_Points=[[1,0]]
 Boundary_Labels=['Dirichlet','None']
-Hidden_Layers=[1,2]
-Neurons_Per_Layer=[10,20,40,80]
+Hidden_Layers=[1,2,3]
+Neurons_Per_Layer=[2,4,8,16,32,64,128]
 Initialization='Glorot_Uniform'
 Activations={'Tanh': jnp.tanh,'Relu': jax.nn.relu}
 Problem=ODE_Scalar_Basic
