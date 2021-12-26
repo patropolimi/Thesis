@@ -111,7 +111,7 @@ class Resolutor_Adaptive(P,metaclass=Template[P]):
 
 		""" Adaptive Learning Iterations """
 
-		return (100*(2**(self.Architecture['Hidden_Layers']))*(np.sqrt(np.sqrt(np.sum(self.Architecture['Neurons_Per_Layer']))+self.Domain['Number_Residuals'])))
+		return int((self.Adaptivity['Learning_Iterations_Multiplier'])*(100*(2**(self.Architecture['Hidden_Layers']))*(np.sqrt(np.sqrt(np.sum(self.Architecture['Neurons_Per_Layer']))+self.Domain['Number_Residuals']))))
 
 
 	def Main(self,Parameters=None):
