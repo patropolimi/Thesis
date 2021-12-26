@@ -47,6 +47,7 @@ NoAction_Threshold=10
 RAR_Threshold=1.05
 GRW_Threshold=1000
 Force_First_Iterations=15
+Learning_Iterations_Multiplier=2
 Initialization='Glorot_Uniform'
 Activation=jnp.tanh
 Problem=Poisson_Scalar_Adaptive
@@ -56,7 +57,7 @@ Parameters=None
 Architecture={'Input_Dimension': 1,'Hidden_Layers': Initial_Hidden_Layers,'Neurons_Per_Layer': Initial_Hidden_Layers*[Initial_Neurons_Per_Layer],'Activation': Activation,'Initialization': Initialization}
 Domain={'Dimension': 1,'Limits': Limits,'Number_Residuals': Initial_Number_Residuals,'Number_Boundary_Points': Number_Boundary_Points,'Boundary_Labels': Boundary_Labels}
 Data={'Source': F,'Exact_Dirichlet': G,'Exact_Neumann': None}
-Adaptivity={'Pool_Residuals_Size': Pool_Residuals_Size,'Max_Number_Residuals': Max_Number_Residuals,'Max_Hidden_Layers': Max_Hidden_Layers,'Min_Neurons_Per_Layer': Min_Neurons_Per_Layer,'Max_Neurons_Per_Layer': Max_Neurons_Per_Layer,'NoAction_Threshold': NoAction_Threshold,'RAR_Threshold': RAR_Threshold,'GRW_Threshold': GRW_Threshold,'Force_First_Iterations': Force_First_Iterations}
+Adaptivity={'Pool_Residuals_Size': Pool_Residuals_Size,'Max_Number_Residuals': Max_Number_Residuals,'Max_Hidden_Layers': Max_Hidden_Layers,'Min_Neurons_Per_Layer': Min_Neurons_Per_Layer,'Max_Neurons_Per_Layer': Max_Neurons_Per_Layer,'NoAction_Threshold': NoAction_Threshold,'RAR_Threshold': RAR_Threshold,'GRW_Threshold': GRW_Threshold,'Force_First_Iterations': Force_First_Iterations,'Learning_Iterations_Multiplier': Learning_Iterations_Multiplier}
 for i in range(Attempts):
 	Solver=Resolutor_Adaptive[Problem](copy.deepcopy(Architecture),copy.deepcopy(Domain),copy.deepcopy(Data),copy.deepcopy(Adaptivity))
 	Start=time.perf_counter()
