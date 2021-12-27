@@ -104,7 +104,7 @@ def Sample_Boundary(Limits,N):
 
 def Set_Normals(Dim):
 
-	""" Setting Normal Vectors For Hyper-Rectangular Domain """
+	""" Setting External Normal Vectors For Hyper-Rectangular Domain """
 
 	Normals=np.zeros((Dim,2*Dim))
 	Normals[:,::2]=-np.eye(Dim)
@@ -182,7 +182,11 @@ def Globals(Set=None):
 
 def Flatten_SetGlobals(ArrayList):
 
-	""" Flatten ArrayList & Update Rows-Cum """
+	""" Flatten ArrayList & Update Global Variables Rows & Cum
+
+		Rows & Cum Are Needed For Reconstruction Of Neural Network Structure From Flat Array Of Weights
+		- Rows: Array Containing Number Of Rows For Matrix Weight Arrays Of Neural Network
+		- Cum: Array Containing Cumulative Sum For Number Of Total Weights Of Neural Network """
 
 	global Rows,Cum
 
@@ -209,7 +213,7 @@ def FastFlatten(ArrayList):
 @jax.jit
 def ListMatrixize(FlatArray):
 
-	""" Matrixize FlatArray & Organize It Listwise """
+	""" Matrixize FlatArray & Organize It Listwise According To Global Variables Rows & Cum """
 
 	global Rows,Cum
 
@@ -218,7 +222,10 @@ def ListMatrixize(FlatArray):
 
 def ForwardCut_Step(Mask,Layer):
 
-	""" Utility For CutOff -> Forward Step """
+	""" Utility For CutOff -> Forward Step: Cut Forward Connections Of Un-Fed Neurons
+
+	 	Mask -> Activation Mask Of Neural Network
+		Layer -> Layer Index On Which To Operate """
 
 	Cut=False
 	R=Mask[Layer].shape[0]
@@ -233,7 +240,10 @@ def ForwardCut_Step(Mask,Layer):
 
 def BackwardCut_Step(Mask,Layer):
 
-	""" Utility For CutOff -> Backward Step """
+	""" Utility For CutOff -> Backward Step: Cut Backward Connections Of Out-Blocked Neurons
+
+		Mask -> Activation Mask Of Neural Network
+		Layer -> Layer Index On Which To Operate """
 
 	Cut=False
 	C=Mask[Layer].shape[1]-1
@@ -248,7 +258,9 @@ def BackwardCut_Step(Mask,Layer):
 
 def CutOff(Mask):
 
-	""" Cut Off Redundant Weights """
+	""" Cut Off Redundant Weights
+
+		Ping-Pong Style To Ensure Correctness & Completeness -> Chain Eliminations Taken Into Account """
 
 	L=len(Mask)
 	[Step,l]=['F',0]

@@ -116,7 +116,25 @@ class Resolutor_Adaptive(P,metaclass=Template[P]):
 
 	def Main(self,Parameters=None):
 
-		""" Main Function Handling Adaptive Learning """
+		""" Main Function Handling Adaptive Learning
+
+			- In Every Adaptive Cycle -> Save Current Model, Perform More Learning Iterations & (If Required) Exploit Adaptive Techniques
+				- If Neural Network Performance Improves Or Initial Forcing Power Left Then Continue, Otherwise Stop & Return With Last Saved Model
+			- Target = (PDE Evaluation Over Pool_Residuals) / (PDE Evaluation Over Current Residuals) -> Key Parameter For Decision Making On Adaptivity Features
+				- Conjectures:
+					- If General Performance Improves Of Factor NoAction_Threshold -> Perform New Iterations Without Adaptivity Features Because Model Improves Promisingly
+					- Otherwise:
+						- If Target < GRW_Threshold -> Target Considered To Be Close To Unity So Growing Is Considered Right Choice
+							- Indeed, In This Case -> Neural Network Is Probably Either Performing Poorly Both On Current Residuals & Pool_Residuals Or The Exact Opposite
+							- Performing Growing -> Trying To Resolve The Issue (Worst Case Scenario)
+							- If Model Was Performing Greatly On Both Set Of Points (Best Case Scenario), Worsening Expected -> In Such Case, Algorithm Exits With Previously Saved Model
+						- If Target > RAR_Threshold -> Target Considered To Be Very Large So Residual Adaptive Refinement Is Considered Right Choice
+							- Indeed, In This Case -> Neural Network Is Performing Much Better On Current Residuals Than On General Pool_Residuals
+							- This Phenomenon Is Probably Due To Poorly Significance Of Current Residual Set
+						- Note -> In Order To Avoid Static & Consequently Useless Runs Of The Algorithm:
+							- Every Time We Exploit Adaptive Feature We Make It More Difficult To Fall In The Relative Adaptive Branch -> Varying Adaptive Parameters
+			- Iterations_Learning -> Learning Iterations To Be Performed Depending On: Number Of Hidden Layers, Number Of Residuals, Number Of Neurons
+			- Salient_Cost_History -> Cost History Evaluating PDE On Pool_Residuals (& BC On Boundary Points) Every Adaptive Cycle """
 
 		Old_Self=copy.deepcopy(self)
 		Current_PoolValues_And_BC={'PoolValues': (Old_Self.Data['Source'](Old_Self.Pool_Residuals)-Old_Self.Equation(Old_Self.Pool_Residuals,Old_Self.Architecture['W']))**2,'BC': Old_Self.BC(Old_Self.BC_Default_X(),Old_Self.Architecture['W'])}

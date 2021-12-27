@@ -92,7 +92,13 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 
 	def Growing(self):
 
-		""" Perform Growing """
+		""" Perform Growing
+
+			Algorithm:
+			- If Possible -> Double Neurons In Last Hidden Layer Initializing Relative Weights
+			- Otherwise:
+				- If Possible -> Add Hidden Layer Composed Of Min_Neurons_Per_Layer (Adaptivity Parameter) Neurons & Keep The Information Of The Former Output Weights Within New First Neuron (Of Last Hidden Layer) Weights
+				- Otherwise -> Maximal Architecture Reached """
 
 		WL=[np.asarray(w) for w in ListMatrixize(self.Architecture['W'])]
 		if (self.Architecture['Neurons_Per_Layer'][-1]<self.Adaptivity['Max_Neurons_Per_Layer']):
@@ -124,7 +130,11 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 		""" Perform Residual Adaptive Refinement
 
 			Requirement:
-			- Values_Pool: 2-D Array Containing PDE Evaluation Over Pool_Residuals """
+			- Values_Pool: 2-D Array Containing PDE Evaluation Over Pool_Residuals
+
+			Algorithm:
+			- If Possible -> Double Residual Points Adding Elements Of Values_Pool On Which PDE Residual Is Highest
+			- Otherwise -> Maximum Number Of Residual Points Reached """
 
 		if (self.Domain['Number_Residuals']<self.Adaptivity['Max_Number_Residuals']):
 			Selected_Indexes=np.argsort(np.ravel(Values_Pool))[-self.Domain['Number_Residuals']:]
