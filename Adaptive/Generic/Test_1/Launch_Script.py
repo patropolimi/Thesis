@@ -19,7 +19,7 @@ def F(X):
 	return S(X)
 def G(X):
 	return jnp.zeros_like(X)
-Attempts=5
+Attempts=3
 Limits=np.array([[0.0,1.0]])
 Points=np.linspace(0.0,1.0,10001)
 Number_Boundary_Points=[[1,1]]

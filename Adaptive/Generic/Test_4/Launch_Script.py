@@ -13,7 +13,7 @@ def S(X):
 String='exp(-t)*sin(3*pi*x)'
 def G(X):
 	return (jnp.exp(-X[0,:])*jnp.sin(3*jnp.pi*X[1,:]))[None,:]
-Attempts=5
+Attempts=3
 Limits=np.array([[-1.0,1.0],[-1.0,1.0]])
 Points_T=np.linspace(-1.0,1.0,2001)
 Points_X=np.linspace(-1.0,1.0,2001)

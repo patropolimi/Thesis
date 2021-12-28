@@ -13,7 +13,7 @@ def S(X):
 String='x*(exp(-((x-1/3)/(1/10))**2)-exp(-((2/3)/(1/10))**2))'
 def G(X):
 	return jnp.zeros_like(X)
-Attempts=5
+Attempts=3
 Limits=np.array([[0.0,1.0]])
 Points=np.linspace(0.0,1.0,1001)
 Number_Boundary_Points=[[1,1]]
