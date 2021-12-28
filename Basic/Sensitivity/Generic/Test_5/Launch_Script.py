@@ -3,7 +3,7 @@
 from Basic.PINN_Resolutors import *
 
 
-""" Test 5 Launch Script -> Basic PINN Generic Sensitivity Analysis"""
+""" Test 5 Launch Script -> Basic PINN Generic Sensitivity Analysis """
 
 
 Negative_Slope=5*1e-2
