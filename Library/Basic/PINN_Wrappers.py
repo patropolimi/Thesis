@@ -138,4 +138,6 @@ class Wrapper_Scalar_Basic(PINN_Basic,Geometry_HyperRectangular):
 
 		""" Prints Current Cost Function Value """
 
+		Globals({'Rows': self.Architecture['Rows'],'Cum': self.Architecture['Cum']})
+
 		print('\nCurrent Cost: %.3e ' %(self.Cost(self.Architecture['W'],self.PDE_Default_X(),self.BC_Default_X())))
