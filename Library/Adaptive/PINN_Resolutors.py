@@ -18,6 +18,20 @@ class Resolutor_Adaptive(P,metaclass=Template[P]):
 	Default={'Alpha': 1e-3,'Beta': 0.9,'Gamma': 0.999,'Delta': 1e-8,'Memory': 10,'GradTol': 1e-6,'AlphaZero': 10.0,'C': 0.5,'T': 0.5,'Eps': 1e-8}
 
 
+	def DeepGet_Internals(self):
+
+		""" Get Internal Attributes Through Deep Copy """
+
+		return {'Architecture': copy.deepcopy(self.Architecture),'Domain': copy.deepcopy(self.Domain),'Data': copy.deepcopy(self.Data),'Adaptivity': copy.deepcopy(self.Adaptivity)}
+
+
+	def Set_Internals(self,Internals):
+
+		""" Set Internal Attributes """
+
+		[self.Architecture,self.Domain,self.Data,self.Adaptivity]=[Internals['Architecture'],Internals['Domain'],Internals['Data'],Internals['Adaptivity']]
+
+
 	@partial(jax.jit,static_argnums=(0))
 	def Two_Loops_Recursion(self,Grad,Mem_DeltaW,Mem_DeltaGrad,Mem_Ro):
 
@@ -54,6 +68,13 @@ class Resolutor_Adaptive(P,metaclass=Template[P]):
 				Alpha*=T
 				Cost_Post=self.Cost(W+Alpha*D,self.PDE_Default_X(),self.BC_Default_X())
 		return Alpha
+
+
+	def Iterations_Learning(self):
+
+		""" Adaptive Learning Iterations """
+
+		return int((self.Adaptivity['Learning_Iterations_Multiplier'])*(100*(2**(self.Architecture['Hidden_Layers']))*(np.sqrt(np.sqrt(np.sum(self.Architecture['Neurons_Per_Layer']))+self.Domain['Number_Residuals']))))
 
 
 	def Learn(self,ADAM_Steps,LBFGS_MaxSteps,Parameters=None):
@@ -107,13 +128,6 @@ class Resolutor_Adaptive(P,metaclass=Template[P]):
 			print('L-BFGS: (%d/%d)' %(Iteration,LBFGS_MaxSteps),end='\r')
 
 
-	def Iterations_Learning(self):
-
-		""" Adaptive Learning Iterations """
-
-		return int((self.Adaptivity['Learning_Iterations_Multiplier'])*(100*(2**(self.Architecture['Hidden_Layers']))*(np.sqrt(np.sqrt(np.sum(self.Architecture['Neurons_Per_Layer']))+self.Domain['Number_Residuals']))))
-
-
 	def Main(self,Parameters=None):
 
 		""" Main Function Handling Adaptive Learning
@@ -136,8 +150,8 @@ class Resolutor_Adaptive(P,metaclass=Template[P]):
 			- Iterations_Learning -> Learning Iterations To Be Performed Depending On: Number Of Hidden Layers, Number Of Residuals, Number Of Neurons
 			- Salient_Cost_History -> Cost History Evaluating PDE On Pool_Residuals (& BC On Boundary Points) Every Adaptive Cycle """
 
-		Old_Self=copy.deepcopy(self)
-		Current_PoolValues_And_BC={'PoolValues': (Old_Self.Data['Source'](Old_Self.Pool_Residuals)-Old_Self.Equation(Old_Self.Pool_Residuals,Old_Self.Architecture['W']))**2,'BC': Old_Self.BC(Old_Self.BC_Default_X(),Old_Self.Architecture['W'])}
+		Old_Internals=self.DeepGet_Internals()
+		Current_PoolValues_And_BC={'PoolValues': (self.Data['Source'](self.Pool_Residuals)-self.Equation(self.Pool_Residuals,self.Architecture['W']))**2,'BC': self.BC(self.BC_Default_X(),self.Architecture['W'])}
 		[Continue,Salient_Cost_History]=[True,[(jnp.mean(Current_PoolValues_And_BC['PoolValues'])+Current_PoolValues_And_BC['BC']).item()]]
 		while (Continue):
 			Iterations=self.Iterations_Learning()
@@ -148,7 +162,7 @@ class Resolutor_Adaptive(P,metaclass=Template[P]):
 			Target=jnp.mean(Current_PoolValues_And_BC['PoolValues'])/self.PDE(self.PDE_Default_X(),self.Architecture['W'])
 			if ((Salient_Cost_History[-2])>(Salient_Cost_History[-1]) or (self.Adaptivity['Force_First_Iterations'])>0):
 				self.Adaptivity['Force_First_Iterations']=max(0,self.Adaptivity['Force_First_Iterations']-1)
-				Old_Self=copy.deepcopy(self)
+				Old_Internals=self.DeepGet_Internals()
 				if (((Salient_Cost_History[-2])/(Salient_Cost_History[-1]))>(self.Adaptivity['NoAction_Threshold'])):
 					print('\nNo-Action Threshold Activated: Performing More Iterations Without Need Of Adaptive Features')
 				else:
@@ -164,7 +178,7 @@ class Resolutor_Adaptive(P,metaclass=Template[P]):
 					else:
 						print('Skip Residual Adaptive Refinement')
 			else:
-				self=copy.deepcopy(Old_Self)
+				self.Set_Internals(Old_Internals)
 				Salient_Cost_History.pop()
 				Continue=False
 				print('\nPerformance Worsened: Ending')

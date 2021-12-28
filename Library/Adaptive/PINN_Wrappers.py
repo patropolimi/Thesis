@@ -194,4 +194,6 @@ class Wrapper_Scalar_Adaptive(PINN_Adaptive,Geometry_HyperRectangular):
 
 		""" Prints Current Cost Function Value """
 
+		Globals({'Rows': self.Architecture['Rows'],'Cum': self.Architecture['Cum']})
+
 		print('Current Cost: %.3e ' %(self.Cost(self.Architecture['W'],self.Pool_Residuals,self.BC_Default_X())))
