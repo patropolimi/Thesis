@@ -30,7 +30,7 @@ def SingleF(X):
 	return (2**(N+1))*(jnp.sum(-H_Epsilon(YD))+jnp.sum(H_Epsilon(YU)))
 def G(X):
 	return jnp.zeros_like(X)
-Attempts=5
+Attempts=3
 Limits=np.array([[0.0,1.0]])
 Points=np.linspace(0.0,1.0,10001)
 Number_Boundary_Points=[[1,1]]
@@ -47,7 +47,7 @@ NoAction_Threshold=10
 RAR_Threshold=1.05
 GRW_Threshold=1000
 Force_First_Iterations=15
-Learning_Iterations_Multiplier=1
+Learning_Iterations_Multiplier=1.5
 Initialization='Glorot_Uniform'
 Activation=jnp.tanh
 Problem=Poisson_Scalar_Adaptive
