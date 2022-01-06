@@ -7,6 +7,7 @@ import time
 import jax
 import jax.numpy as jnp
 import numpy as np
+import pandas as pd
 import smt.sampling_methods as sm
 import matplotlib.pyplot as plt
 from functools import partial

@@ -7,6 +7,7 @@ REQUIRED:
 
 PACKAGES:
 Run the following commands from terminal:
+- pip install pandas
 - pip install numpy
 - pip install jaxlib
 - pip install jax
