@@ -13,15 +13,18 @@ def main():
 			T=str(input('Test: '))
 			I=int(input('Instances: '))
 			D=int(input('Dimensions: '))
+			Latex=eval(input('Latex: '))
 			for i in range(I):
 				Name='Test_'+str(T)+'/'+'Model_'+str(i+1)
 				File=open(Name,'rb')
 				Model=dill.load(File)
 				Fig1=plt.figure(1)
-				Fig1.suptitle('Salient Cost Evolution')
+				if (not Latex):
+					Fig1.suptitle('Salient Cost Evolution')
 				plt.semilogy(Model['Saliency_History'])
 				Fig2=plt.figure(2)
-				Fig2.suptitle('Network & Solution')
+				if (not Latex):
+					Fig2.suptitle('Network & Solution')
 				if (D==1):
 					plt.plot(Model['Points_Eval'],Model['Network_Eval'],label='Network')
 					plt.plot(Model['Points_Eval'],Model['Solution_Eval'],label=Model['Solution'])

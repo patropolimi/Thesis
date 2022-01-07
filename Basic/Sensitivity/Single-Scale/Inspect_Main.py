@@ -17,15 +17,18 @@ def main():
 			NPL=str(input('Neurons Per Layer: '))
 			NR=str(input('Number Residuals: '))
 			I=int(input('Instances: '))
+			Latex=eval(input('Latex: '))
 			for i in range(I):
 				Name='Test_'+T+'/'+Act+'_Model_'+F+'_'+HL+'HL_'+NPL+'NPL_'+NR+'NR_'+str(i+1)
 				File=open(Name,'rb')
 				Model=dill.load(File)
 				Fig1=plt.figure(1)
-				Fig1.suptitle('Cost Evolution')
+				if (not Latex):
+					Fig1.suptitle('Cost Evolution')
 				plt.semilogy(Model['History'])
 				Fig2=plt.figure(2)
-				Fig2.suptitle('Network & Solution')
+				if (not Latex):
+					Fig2.suptitle('Network & Solution')
 				plt.plot(Model['Points_Eval'],Model['Network_Eval'],label='Network')
 				plt.plot(Model['Points_Eval'],Model['Solution_Eval'],label=Model['Solution'])
 				plt.legend()

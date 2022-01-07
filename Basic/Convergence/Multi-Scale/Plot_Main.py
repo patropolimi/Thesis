@@ -17,6 +17,7 @@ def main():
 			NPL=str(input('Neurons Per Layer: '))
 			NumbRes=eval(input('Number Residuals: '))
 			I=int(input('Instances: '))
+			Latex=eval(input('Latex: '))
 			Relative_L2_Error=np.zeros((I,len(NumbRes)))
 			for i in range(I):
 				for j in range(len(NumbRes)):
@@ -32,7 +33,8 @@ def main():
 				plt.loglog(NumbRes,np.asarray(NumbRes,dtype=float)**(-2),label='Order 2 Decrease')
 				plt.xticks(NumbRes,NumbRes)
 				plt.legend()
-				plt.suptitle('Error '+ModeName+' Trend')
+				if (not Latex):
+					plt.suptitle('Error '+ModeName+' Trend')
 				plt.show()
 		else:
 			break

@@ -15,13 +15,18 @@ def main():
 			T=str(input('Test: '))
 			Act=str(input('Activation: '))
 			F=str(input('Frequency: '))
+			Latex=eval(input('Latex: '))
 			Name='Test_'+T+'/'+Act+'_Models_'+F+'_Tables'
 			File=open(Name,'rb')
 			Model=dill.load(File)
 			File.close()
 			for TableName,Table in Model.items():
 				print('\n'+TableName+'\n')
-				print(Table)
+				if (Latex):
+					Latex_Table=pd.DataFrame(Table)
+					print(Latex_Table.to_latex())
+				else:
+					print(Table)
 		else:
 			break
 
