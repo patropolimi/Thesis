@@ -41,7 +41,6 @@ def main():
 					Axes=plt.axes(projection='3d')
 					Axes.plot_surface(XG,YG,Model['Network_Eval'].reshape((NY,NX)),label='Network')
 					Axes.plot_surface(XG,YG,Model['Solution_Eval'].reshape((NY,NX)),label=Model['Solution'])
-					plt.legend()
 					plt.show()
 					SliceTime=eval(input('Slice-Time Plots: '))
 					while (SliceTime):
