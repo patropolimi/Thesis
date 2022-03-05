@@ -29,8 +29,8 @@ def main():
 			for ModeName,Mode in Criterion.items():
 				Plot_Vector=Mode(Relative_L2_Error,axis=0)
 				plt.loglog(NumbRes,Plot_Vector,label='L2 Relative Error')
-				plt.loglog(NumbRes,np.asarray(NumbRes,dtype=float)**(-1),label='Order 1 Decrease')
-				plt.loglog(NumbRes,np.asarray(NumbRes,dtype=float)**(-2),label='Order 2 Decrease')
+				plt.loglog(NumbRes,np.asarray(NumbRes,dtype=float)**(-1),label='Order 1')
+				plt.loglog(NumbRes,np.asarray(NumbRes,dtype=float)**(-2),label='Order 2')
 				plt.xticks(NumbRes,NumbRes)
 				plt.legend()
 				if (not Latex):
